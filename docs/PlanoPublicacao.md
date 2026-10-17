@@ -119,7 +119,7 @@ Depois da 1.0, as linhas 1.x, 2.x e 3.x andam em paralelo.
 
 ## Parte 2: site no ar
 
-### [ ] 2.1 Deploy no Cloudflare (era Pages, virou Worker com arquivos estáticos)
+### [x] 2.1 Deploy no Cloudflare (era Pages, virou Worker com arquivos estáticos)
 
 **Agente:** Sonnet · **Depende de:** 1.0 · **Decisão:** D4
 
@@ -146,6 +146,8 @@ Plano grátis do Pages: 25 MiB por arquivo e 20 mil arquivos. Alternativa sem co
 3. Variável de build `PNPM_VERSION` = `12.10.1`, a versão local. A imagem de build pode trazer um pnpm antigo que não lê o lockfile v9 nem o `pnpm-workspace.yaml`. O Node vem do `.node-version`. O `prepare` da 1.1 também roda nesse `pnpm install`.
 4. Depois do primeiro deploy, repetir o passo 4 em `https://bqtable.<subdomínio>.workers.dev` e marcar `[x]`.
 
+Publicado em 17/10 em **https://bqtable.kauefar.workers.dev** (commit `2737f00`). O passo 4 passou lá, no Chrome e no Firefox, sem erro de CORS nem de CSP. Rotas desconhecidas devolvem o `index.html`, e `/assets/*` vai com `Access-Control-Allow-Origin: *`.
+
 ### [ ] 2.2 Abrir jogos de qualquer repositório git
 
 **Agente:** Sonnet · **Depende de:** 2.1 (e o `SDK.md` da 1.1 para o item 4)
@@ -162,7 +164,7 @@ Plano grátis do Pages: 25 MiB por arquivo e 20 mil arquivos. Alternativa sem co
 
 **Aceite:** testes da normalização. Na URL publicada, a pirâmide abre por um link `github.com/.../blob/...` e por `?gh=`.
 
-**Resultado:** `src/pages/play/enderecos.ts` (`normalizarUrl` e `urlDoGh`, com testes) cobre `blob` e `raw` (que viram raw), `tree` (abre o `manifest.json` da pasta) e Release (mensagem, sem baixar), e a PlayPage aceita `?gh=`. Já o `fetchOk` lança `NetworkError` com a explicação do CORS, no site e no iframe. A forma pasta funciona pelo raw, e `rules` em `.ts` agora dá um erro que pede a versão compilada (`loadRules`). A seção 1 do FormatoBqgame ganhou os links do GitHub, "Pasta por URL" e "Onde hospedar um jogo". No `wrangler pages dev` (Chrome e Firefox), a pirâmide abre por `github.com/.../blob/...` e por `?gh=`, com e sem `@ref`. **Falta:** o item 4 (workflow no `SDK.md`, que a 1.1 ainda não criou) e o aceite na URL publicada.
+**Resultado:** `src/pages/play/enderecos.ts` (`normalizarUrl` e `urlDoGh`, com testes) cobre `blob` e `raw` (que viram raw), `tree` (abre o `manifest.json` da pasta) e Release (mensagem, sem baixar), e a PlayPage aceita `?gh=`. Já o `fetchOk` lança `NetworkError` com a explicação do CORS, no site e no iframe. A forma pasta funciona pelo raw, e `rules` em `.ts` agora dá um erro que pede a versão compilada (`loadRules`). A seção 1 do FormatoBqgame ganhou os links do GitHub, "Pasta por URL" e "Onde hospedar um jogo". Aceite ok na URL publicada (Chrome e Firefox): a pirâmide abre por `github.com/.../blob/...` e por `?gh=`, com e sem `@ref`, e a mesa com zonas abre por `/tree/`. **Falta:** o item 4, o workflow no `SDK.md`. O `SDK.md` já existe, então ele não está mais bloqueado.
 
 ### [ ] 2.3 itch.io (opcional)
 
