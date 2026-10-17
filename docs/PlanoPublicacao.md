@@ -23,7 +23,7 @@ Criado em 16/10/2026. Cada tarefa (1.0, 1.1, …) é autocontida e pode ir para 
 | D1  | Repo do Eternal Decks: público ou privado     | **Privado** (regras e textos da editora)                                                                | Privado: o site não abre por link (o raw do GitHub exige token). Joga-se escolhendo o arquivo, ou o host manda o pacote pelo P2P (Parte 3).        |
 | D2  | Arte bruta (`imgs/`, `imgs2/`, PDFs, ~410 MB) | Fora do git, numa pasta local indicada por variável de ambiente                                         | Git LFS tem cota gratuita pequena para esse volume.                                                                                               |
 | D3  | Como o repo do jogo recebe o motor            | Dependência git do bqtable com tag (`github:KaueMre/bqtable#sdk-v0.1.0`), importando de `bqtable/sdk` | Publicar no npm fica para quando houver autores de fora.                                                                                          |
-| D4  | Hospedagem                                    | Cloudflare Pages ligado ao GitHub                                                                       | Precisa de conta Cloudflare (passo manual do usuário).                                                                                            |
+| D4  | Hospedagem                                    | Cloudflare ligado ao GitHub: um Worker só com os arquivos do build (`wrangler.jsonc`). O painel não oferece mais Pages | Precisa de conta Cloudflare (passo manual do usuário).                                                                                            |
 | D5  | Sinalização do WebRTC na versão base          | PeerJS com o servidor público deles, atrás de uma interface `Transport`                                 | Trocar por Trystero ou por um Worker próprio (3.6) sem mexer no resto.                                                                            |
 
 ## Fatos verificados (16/10/2026): não precisa reverificar
@@ -95,7 +95,7 @@ Depois da 1.0, as linhas 1.x, 2.x e 3.x andam em paralelo.
 
 **Fora do escopo:** publicar no npm. Criar a tag fica com o usuário.
 
-**Resultado:** entradas em `src/sdk/` (lint barra React e a tela), `scripts/build-sdk.mjs` no `prepare` gera `dist-sdk/` (esbuild + `.d.ts` do tsc com `@/` reescrito), `files` publica só isso e o `pack-game.mjs` (agora com shebang e funcionando por link). O esbuild foi para `dependencies`, a versão foi para `0.1.0`, e o `loadGameFolder` ganhou `{ exclude }`. A pirâmide importa de `bqtable/sdk` por alias. Docs em `docs/engine/SDK.md`. O pacote fica numa subpasta `jogo/`, e o script se chama `empacotar` porque `pnpm pack` é comando nativo do pnpm. Aceite ok com `link:` e com `git+file://` de uma cópia commitada numa pasta temporária (o `prepare` roda). O pnpm 12 exige no `allowBuilds` do jogo a linha `bqtable@<url>#<commit>` que ele mesmo mostra. **Pendente:** o usuário cria a tag `sdk-v0.1.0` e se repete o teste com `github:`.
+**Resultado:** entradas em `src/sdk/` (lint barra React e a tela), `scripts/build-sdk.mjs` no `prepare` gera `dist-sdk/` (esbuild + `.d.ts` do tsc com `@/` reescrito), `files` publica só isso e o `pack-game.mjs` (agora com shebang e funcionando por link). O esbuild foi para `dependencies`, a versão foi para `0.1.0`, e o `loadGameFolder` ganhou `{ exclude }`. A pirâmide importa de `bqtable/sdk` por alias. Docs em `docs/engine/SDK.md`. O pacote fica numa subpasta `jogo/`, e o script se chama `empacotar` porque `pnpm pack` é comando nativo do pnpm. Aceite ok com `link:` e com `git+file://` de uma cópia commitada numa pasta temporária (o `prepare` roda). O pnpm 12 exige no `allowBuilds` do jogo a linha `bqtable@<url>#<commit>` que ele mesmo mostra. Tag `sdk-v0.1.0` criada em 17/10 (commit `2136708`). Teste com `github:` ok no eternal-decks: o `prepare` gerou o `dist-sdk/`, e os testes, o typecheck e o empacotamento passaram.
 
 ### [x] 1.2 Repositório do Eternal Decks
 
@@ -113,13 +113,13 @@ Depois da 1.0, as linhas 1.x, 2.x e 3.x andam em paralelo.
 
 **Aceite:** no repo novo, `pnpm install && pnpm test && pnpm typecheck && pnpm imagens && pnpm pack` gera o `.bqgame`. Ele abre no `pnpm dev` do bqtable por **Escolher arquivo**, e o Stage A solo é jogável. No bqtable, o aceite da 1.0 continua passando.
 
-**Resultado:** `~/dev/eternal-decks` com `git init` (sem commit). O pacote está em `jogo/`, os `.md` em `docs/`, e `scripts/imagens.mjs` (lê `ETERNAL_DECKS_ARTE`) e `scripts/descricoes.mjs`. Os testes usam `loadGameFolder(pasta, { exclude })`. O script de empacotar é `pnpm empacotar` (`pnpm pack` é comando do pnpm). Aceite ok: 161 testes, typecheck, 438 imagens, e o `.bqgame` (446 arquivos) igual ao antigo menos o LEIAME e um `"use strict"` no `regras.js`. No Chrome (headless, `pnpm dev` + **Escolher arquivo**), o Stage A abriu, uma carta foi para o topo e a vez passou para Beta. No bqtable saíram os scripts e o `eternal-decks`, e o `.gitignore` ficou só com `/games/`, `/src/games/` e `/docs/games/`. O aceite da 1.0 passou de novo. **Pendente:** o bqtable está em `link:../bqtable` até existir a tag; depois trocar por `github:KaueMre/bqtable#sdk-v0.1.0` e liberar a linha `bqtable@…` no `allowBuilds`. O usuário apaga `games/eternal-decks` e `docs/games/eternal_decks` (a arte segue lá até ser movida).
+**Resultado:** `~/dev/eternal-decks` com `git init` (sem commit). O pacote está em `jogo/`, os `.md` em `docs/`, e `scripts/imagens.mjs` (lê `ETERNAL_DECKS_ARTE`) e `scripts/descricoes.mjs`. Os testes usam `loadGameFolder(pasta, { exclude })`. O script de empacotar é `pnpm empacotar` (`pnpm pack` é comando do pnpm). Aceite ok: 161 testes, typecheck, 438 imagens, e o `.bqgame` (446 arquivos) igual ao antigo menos o LEIAME e um `"use strict"` no `regras.js`. No Chrome (headless, `pnpm dev` + **Escolher arquivo**), o Stage A abriu, uma carta foi para o topo e a vez passou para Beta. No bqtable saíram os scripts e o `eternal-decks`, e o `.gitignore` ficou só com `/games/`, `/src/games/` e `/docs/games/`. O aceite da 1.0 passou de novo. Em 17/10, o repo foi para `gartergar/eternal-decks` (privado) e passou a usar `github:KaueMre/bqtable#sdk-v0.1.0`, com a linha `bqtable@…` no `allowBuilds`. Os 161 testes, o typecheck e o `.bqgame` passaram, com o mesmo conteúdo de antes. **Pendente:** o usuário apaga `games/eternal-decks` e `docs/games/eternal_decks` (a arte segue lá até ser movida).
 
 ---
 
 ## Parte 2: site no ar
 
-### [ ] 2.1 Deploy no Cloudflare Pages
+### [ ] 2.1 Deploy no Cloudflare (era Pages, virou Worker com arquivos estáticos)
 
 **Agente:** Sonnet · **Depende de:** 1.0 · **Decisão:** D4
 
@@ -139,13 +139,12 @@ Plano grátis do Pages: 25 MiB por arquivo e 20 mil arquivos. Alternativa sem co
 
 **Aceite:** o passo 4 passando no `wrangler pages dev` e depois na URL publicada.
 
-**Resultado:** `public/_headers`, `.node-version` (22) e `.wrangler` no `.gitignore`. O passo 4 passou no `wrangler pages dev dist` (wrangler 4.151), no Chrome e no Firefox (Playwright), sem erro de CORS nem de CSP. O `'self'` da CSP do frame funciona nos dois navegadores, então a origem explícita não foi necessária. O Pages redireciona `/frame.html` para `/frame` (308) e o iframe acompanha. O wrangler manda `Access-Control-Allow-Origin: *` em tudo mesmo sem o `_headers`, que fica para deixar a intenção explícita. **Falta (usuário):** commit e push (o Pages compila o que está no GitHub, incluindo a 1.0), e depois:
+**Resultado:** `public/_headers`, `.node-version` (22) e `.wrangler` no `.gitignore`. Em 17/10, o painel do Cloudflare não oferecia mais criar um projeto Pages, só um Worker. Por isso entrou o `wrangler.jsonc`: um Worker sem código, com `assets.directory: ./dist` e `not_found_handling: single-page-application`, que faz o papel da regra de SPA do Pages. O passo 4 passou no `wrangler dev` (modo Workers, wrangler 4.151), no Chrome e no Firefox (Playwright), sem erro de CORS nem de CSP. O `wrangler deploy --dry-run` aceitou a configuração. No modo Workers não há `Access-Control-Allow-Origin` por padrão, então o `_headers` é necessário (o `pages dev` mandava em tudo). O `'self'` da CSP do frame funciona nos dois navegadores. `/frame.html` redireciona para `/frame` (307) e o iframe acompanha. **Falta (usuário):** commit e push do `wrangler.jsonc`, e depois:
 
-1. dash.cloudflare.com → Workers e Pages → Criar → Pages → Conectar ao Git → `KaueMre/bqtable`.
-2. Branch de produção `main`, framework "Nenhum", build `pnpm build`, saída `dist`.
-3. Variável de ambiente `PNPM_VERSION` = `12.10.1`, a versão local. A imagem do Pages pode trazer um pnpm antigo que não lê o lockfile v9 nem o `pnpm-workspace.yaml`. O Node vem do `.node-version`. O `prepare` da 1.1 também roda nesse `pnpm install`.
-4. Configurações → Builds → previews: todas as branches.
-5. Depois do primeiro deploy, repetir o passo 4 em `https://<projeto>.pages.dev` e marcar `[x]`.
+1. dash.cloudflare.com → Workers e Pages → Criar → importar o repositório `KaueMre/bqtable`.
+2. Nome do Worker: `bqtable`, igual ao `name` do `wrangler.jsonc`. Build command `pnpm build`, deploy command `npx wrangler deploy` (padrão), path `/`, preview builds ligados.
+3. Variável de build `PNPM_VERSION` = `12.10.1`, a versão local. A imagem de build pode trazer um pnpm antigo que não lê o lockfile v9 nem o `pnpm-workspace.yaml`. O Node vem do `.node-version`. O `prepare` da 1.1 também roda nesse `pnpm install`.
+4. Depois do primeiro deploy, repetir o passo 4 em `https://bqtable.<subdomínio>.workers.dev` e marcar `[x]`.
 
 ### [ ] 2.2 Abrir jogos de qualquer repositório git
 

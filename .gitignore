@@ -5,7 +5,7 @@ coverage
 *.local
 *.tsbuildinfo
 .DS_Store
-# estado local do `wrangler pages dev`
+# estado local do `wrangler dev`
 .wrangler
 # Jogos: ficam fora do git do site (cada um vai para um repositório próprio). Inclui a arte da
 # editora do Eternal Decks, que ainda está em docs/games/eternal_decks/imgs.

@@ -48,7 +48,7 @@ export default defineConfig({
   },
   server: {
     // o iframe do jogo tem origem opaca ("null"): sem CORS ele não carrega os módulos do dev server.
-    // Em produção, /assets vai com Access-Control-Allow-Origin (public/_headers, do Cloudflare Pages).
+    // Em produção, /assets vai com Access-Control-Allow-Origin (public/_headers, lido pelo Cloudflare).
     cors: true,
   },
   test: {

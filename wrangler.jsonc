@@ -1,0 +1,12 @@
+// O site no Cloudflare: um Worker só com os arquivos do build (sem código de servidor). O
+// Workers Builds roda `pnpm build` e depois `npx wrangler deploy`, que lê este arquivo. O `name`
+// precisa ser igual ao nome do Worker no painel.
+{
+  "name": "bqtable",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // rota que não é arquivo (/jogar?url=… aberto direto) recebe o index.html
+    "not_found_handling": "single-page-application",
+  },
+}

@@ -371,7 +371,7 @@ Limites conhecidos:
 
 - Um `regras.js` com laço infinito trava o iframe (o resto do site continua, porque o Chrome roda o iframe em outro processo). Uma trava de tempo fica para depois.
 - O iframe pode buscar imagens e dados em qualquer URL (é assim que `assets.base` funciona). Não há segredo do site lá dentro para vazar, só o estado da partida.
-- Em produção, a página do jogo precisa carregar os scripts com o cabeçalho `Access-Control-Allow-Origin` (o iframe tem origem `null`), ou ficar num domínio próprio. No Cloudflare Pages, o `public/_headers` manda esse cabeçalho em `/assets/*`.
+- Em produção, a página do jogo precisa carregar os scripts com o cabeçalho `Access-Control-Allow-Origin` (o iframe tem origem `null`), ou ficar num domínio próprio. No Cloudflare (um Worker com os arquivos do build, configurado no `wrangler.jsonc`), o `public/_headers` manda esse cabeçalho em `/assets/*`.
 
 ## 12. Regras automáticas (`regras.js`)
 
