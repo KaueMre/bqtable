@@ -12,6 +12,7 @@ import {
   type GameState,
   type KindDef,
   type Manager,
+  type Motion,
   type Piece,
   type PieceInit,
   type ZoneSpec,
@@ -100,6 +101,8 @@ export interface LoadedGame {
   describe(piece: Piece): string | undefined;
   /** Selos e áreas clicáveis do kind (`badges`, `hotspots`). Mesma peça → mesmo objeto. */
   decorate(piece: Piece): PieceDecoration | undefined;
+  /** Movimento na tela: o `table.motion` com o `motion` do kind por cima, campo a campo. */
+  motion(piece: Piece): Motion | undefined;
   /** Item de dados ligado à peça (kind com `data` e `attributes.def`). */
   dataOf(piece: Piece): DataItem | undefined;
   /** Endereço real de uma imagem do pacote (para pré-carregar). */
@@ -156,6 +159,7 @@ export async function loadGame(source: PackageSource): Promise<LoadedGame> {
 
   const players = manifest.players ?? { min: 1, max: 1 };
   const decorations = new WeakMap<Piece, PieceDecoration | null>();
+  const motions = new Map<string, Motion | undefined>();
   const keywords = loadKeywords(manifest);
 
   /** Arrastar → dropInto; duplo clique → próximo status do `activate.cycleStatus` do kind. */
@@ -235,6 +239,14 @@ export async function loadGame(source: PackageSource): Promise<LoadedGame> {
       }
       decorations.set(piece, out);
       return out ?? undefined;
+    },
+
+    motion(piece) {
+      if (!motions.has(piece.kind)) {
+        const merged = { ...manifest.table?.motion, ...kinds.get(piece.kind)?.motion };
+        motions.set(piece.kind, Object.keys(merged).length ? merged : undefined);
+      }
+      return motions.get(piece.kind);
     },
 
     dataOf(piece) {

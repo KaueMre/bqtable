@@ -63,6 +63,53 @@ describe('fim de partida (endGame)', () => {
   });
 });
 
+describe('fim de partida competitivo (winners, ranking)', () => {
+  it('guarda os vencedores e o placar, sem `result`', () => {
+    const m = setup();
+    const end = {
+      winners: ['p2'],
+      ranking: [
+        { player: 'p2', score: 34, label: '$34', text: 'Compra um <b>chapéu</b>' },
+        { player: 'p1', score: 21 },
+      ],
+      message: 'Fim das 3 corridas',
+    };
+    const r = m.dispatch({ type: 'endGame', ...end });
+    if (!r.ok) throw new Error(r.error);
+    expect(m.getState().ended).toEqual(end);
+    expect(r.value.find((e) => e.type === 'gameEnded')).toEqual({ type: 'gameEnded', ...end });
+    expect(m.dispatch({ type: 'move', id: 'f1', x: 2, y: 2 }).ok).toBe(false);
+  });
+
+  it('result e winners juntos valem', () => {
+    const m = setup();
+    expect(m.dispatch({ type: 'endGame', result: 'draw', winners: ['p1', 'p2'] }).ok).toBe(true);
+    expect(m.getState().ended).toEqual({ result: 'draw', winners: ['p1', 'p2'] });
+  });
+
+  it('recusa jogador que não existe, repetido, e o fim sem resultado', () => {
+    const m = setup();
+    const end = (cmd: object) => m.check({ type: 'endGame', ...cmd });
+    expect(end({})).toBe('endGame precisa de result ou winners');
+    expect(end({ result: 'ganhou' })).toBe('resultado inválido: "ganhou"');
+    expect(end({ winners: [] })).toBe('winners precisa de um jogador ou mais');
+    expect(end({ winners: ['p9'] })).toBe('winners: jogador "p9" não existe');
+    expect(end({ winners: ['p1', 'p1'] })).toBe('winners: "p1" aparece duas vezes');
+    expect(end({ result: 'win', ranking: [{ player: 'p3' }] })).toBe(
+      'ranking: jogador "p3" não existe',
+    );
+    expect(end({ winners: ['p1'], ranking: [{ player: 'p1' }, { player: 'p1' }] })).toBe(
+      'ranking: "p1" aparece duas vezes',
+    );
+    expect(end({ winners: ['p1'], ranking: [{ player: 'p1', score: 'muito' }] })).toBe(
+      'ranking: score inválido de "p1"',
+    );
+    expect(end({ winners: ['p1'], ranking: [{ player: 'p1', text: 3 }] })).toBe(
+      'ranking: text de "p1" precisa ser texto',
+    );
+  });
+});
+
 describe('escolhas (ask)', () => {
   const pedir = (m: Manager, ask: object) => {
     m.registerRule({

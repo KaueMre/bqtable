@@ -55,6 +55,39 @@ export default defineConfig([
       ],
     },
   },
+  // A rede (PlanoPublicacao.md, parte 3): TypeScript puro, roda e testa no Node.
+  {
+    files: ['src/engine/net/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'react',
+                'react/*',
+                'react-dom',
+                'react-dom/*',
+                'konva',
+                'react-konva',
+                '@/engine/data',
+                '@/engine/data/*',
+                '@/engine/react',
+                '@/engine/react/*',
+                '@/engine/render',
+                '@/engine/render/*',
+                '@/engine/ui/*',
+                '@/games/*',
+                '@/pages/*',
+              ],
+              message: 'engine/net não importa React, tela, jogos nem páginas.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ['src/engine/react/**/*.{ts,tsx}'],
     rules: {

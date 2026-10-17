@@ -10,6 +10,8 @@ Um jogo pode morar num repositório git separado do bqtable. Ele instala o bqtab
 
 Os caminhos internos (`@/engine/...`) só valem dentro do repositório do bqtable.
 
+O que mudou em cada versão, o que um jogo precisa mudar e o que pode aproveitar está em [VersoesSDK.md](VersoesSDK.md). A partir da 0.2.0, a SDK traz a documentação da mesma versão em `node_modules/bqtable/docs/engine/` (este arquivo, o `FormatoBqgame.md` e o `VersoesSDK.md`).
+
 ## Estrutura
 
 ```
@@ -50,7 +52,7 @@ Deixe o pacote numa pasta própria (`jogo/`). O `bqgame-pack` junta tudo o que e
 }
 ```
 
-- A tag (`#sdk-v0.1.0`) fixa a versão da SDK. Para atualizar, troque a tag e rode `pnpm install`.
+- A tag (`#sdk-v0.1.0`) fixa a versão da SDK. Para atualizar, leia em [VersoesSDK.md](VersoesSDK.md) as versões entre a sua e a nova, troque a tag e rode `pnpm install`.
 - O script não se chama `pack` porque `pnpm pack` é um comando do próprio pnpm (gera um tarball do repositório) e passa na frente do script. Use `pnpm empacotar`.
 - Para testar uma mudança no motor antes da tag, use `"bqtable": "link:../bqtable"`. Nesse caso, rode antes `pnpm build:sdk` no bqtable.
 
@@ -202,6 +204,7 @@ jobs:
 ## Para quem mexe no bqtable
 
 - As entradas ficam em `src/sdk/` (`index.ts` e `testing.ts`). O lint impede que elas importem React ou a tela.
-- `pnpm build:sdk` (que também roda no `prepare`) gera `dist-sdk/` com o JS (esbuild) e os `.d.ts` (tsc, com os caminhos `@/` reescritos). O `package.json` publica só `dist-sdk/` e o `pack-game.mjs` (campo `files`).
+- `pnpm build:sdk` (que também roda no `prepare`) gera `dist-sdk/` com o JS (esbuild) e os `.d.ts` (tsc, com os caminhos `@/` reescritos). O `package.json` publica só `dist-sdk/`, `docs/engine/` e o `pack-game.mjs` (campo `files`).
 - Dentro do repositório, `examples/` importa de `bqtable/sdk` por alias (`vite.config.ts` e `tsconfig.test.json`), direto do fonte.
-- Mudou algo exportado pela SDK? Crie uma tag nova (`sdk-v0.2.0`) e avise os jogos.
+- Mudou algo que um jogo vê (manifest, comandos, API das regras, exportações da SDK, `bqgame-pack`)? Anote na hora em [VersoesSDK.md](VersoesSDK.md), na seção da versão em preparo. Para lançar, crie a tag nova (`sdk-v0.2.0`), feche a seção dela (VersoesSDK.md, "Como manter este arquivo") e avise os jogos.
+- O `package.json` também publica `docs/engine/`: o jogo lê a documentação da versão que instalou.

@@ -30,6 +30,35 @@ const SlotPattern = z.discriminatedUnion('pattern', [
 ]);
 export type SlotPatternManifest = z.infer<typeof SlotPattern>;
 
+const PlaceType = z.enum(['instant', 'drop', 'move', 'showcase']);
+const AfterType = z.enum(['none', 'shake', 'glow']);
+/** Chegada ao lugar novo: o tipo, ou o tipo com ajustes. */
+const PlaceMotion = z.union([
+  PlaceType,
+  z.object({
+    type: PlaceType,
+    duration: num.positive().max(5000).optional(),
+    path: z.enum(['line', 'arc']).optional(),
+    at: z.enum(['center', 'left', 'right']).optional(),
+    hold: num.min(0).max(10000).optional(),
+  }),
+]);
+/** Efeito depois de chegar: o tipo, ou o tipo com ajustes. */
+const AfterMotion = z.union([
+  AfterType,
+  z.object({
+    type: AfterType,
+    duration: z.union([num.positive().max(60000), z.literal('next')]).optional(),
+    color: z.string().optional(),
+  }),
+]);
+/** Como as peças se movem na tela (core/motion.ts). */
+export const MotionManifest = z.object({
+  drag: z.enum(['follow', 'arrow']).optional(),
+  place: PlaceMotion.optional(),
+  after: AfterMotion.optional(),
+});
+
 export const ZoneManifest = z.object({
   layout: z.enum(['free', 'grid', 'slots', 'stack', 'fan', 'row']),
   accepts: z
@@ -61,6 +90,8 @@ export const ZoneManifest = z.object({
   backStatus: z.string().optional(),
   /** Outros jogadores também podem soltar peças aqui. */
   openToOthers: z.boolean().optional(),
+  /** Como as peças chegam nesta zona na tela (vence o `motion` do kind). */
+  motion: MotionManifest.pick({ place: true, after: true }).optional(),
 });
 
 /** Peça como no motor (PieceInit), em JSON. Validada depois de preencher os `{campos}`. */
@@ -133,6 +164,8 @@ export const KindManifest = z.object({
       }),
     )
     .optional(),
+  /** Como as peças deste tipo se movem na tela: arrasto, chegada e efeito depois. */
+  motion: MotionManifest.optional(),
   /** Áreas da peça (coordenadas da peça): o duplo clique numa delas leva `area` no gesto. */
   hotspots: z
     .array(
@@ -354,6 +387,8 @@ export const GameManifest = z.object({
       background: z.string().optional(),
       /** Contornos e rótulos das zonas começam visíveis? (o jogador liga e desliga; padrão: sim) */
       guides: z.boolean().optional(),
+      /** Movimento padrão de todos os kinds (o `motion` de cada kind vence, campo a campo). */
+      motion: MotionManifest.optional(),
     })
     .optional(),
   /** Base para imagens com caminho relativo que não estão dentro do pacote. */

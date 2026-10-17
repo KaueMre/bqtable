@@ -1,3 +1,5 @@
+import type { Command, GameState } from '@/engine/core';
+
 /**
  * Mensagens entre o site e o iframe isolado que roda o jogo. O iframe tem origem opaca
  * (sandbox sem allow-same-origin): não lê cookies nem armazenamento do site, e não alcança o DOM
@@ -19,6 +21,50 @@ export interface FrameLoad {
   url?: string;
   /** Preferências do jogador guardadas pelo site (o iframe não tem onde guardar). */
   prefs?: SitePrefs;
+  /** Partida em rede: a rede fica no site, e o jogo conversa com ela por `bq:net-in`/`bq:net-out`. */
+  net?: FrameNet;
+}
+
+/**
+ * O papel do iframe numa partida em rede. Host: a partida de verdade roda aqui, com a tela fixa no
+ * assento dele. Convidado: a tela mostra o estado que o host manda, e os comandos vão para ele.
+ */
+export interface FrameNet {
+  role: 'host' | 'guest';
+  seat: string;
+  /** Convidado: a partida do host (as ações do jogo dependem das opções). */
+  players?: number;
+  options?: Record<string, string>;
+}
+
+/** site → iframe, numa partida em rede. */
+export type NetIn =
+  /** host: comando de um convidado (o `actor` ainda não vale; o jogo usa o assento). */
+  | { kind: 'cmd'; seat: string; cmd: Command }
+  /** convidado: o estado do assento dele. */
+  | { kind: 'state'; state: GameState }
+  /** convidado: o host recusou um comando dele. */
+  | { kind: 'rejected'; reason: string };
+
+/** iframe → site, numa partida em rede. */
+export type NetOut =
+  /** host: o estado de cada assento (já sem o que o assento não vê) e as opções da partida. */
+  | { kind: 'states'; states: Record<string, GameState>; options: Record<string, string> }
+  /** host: o jogo recusou o comando de um convidado. */
+  | { kind: 'rejected'; seat: string; reason: string }
+  /** convidado: comando para o host. */
+  | { kind: 'cmd'; cmd: Command };
+
+export interface FrameNetIn {
+  type: 'bq:net-in';
+  nonce: string;
+  msg: NetIn;
+}
+
+export interface FrameNetOut {
+  type: 'bq:net-out';
+  nonce: string;
+  msg: NetOut;
 }
 
 /** Atalhos trocados pelo jogador: comando → combinação (`null` = sem atalho). */
@@ -76,7 +122,40 @@ export type FrameResult =
   | { type: 'bq:error'; nonce: string; message: string };
 
 export type FrameMessage =
-  FrameReady | FrameLoad | FrameKey | FramePrefs | FrameKeymap | FrameResult;
+  | FrameReady
+  | FrameLoad
+  | FrameKey
+  | FramePrefs
+  | FrameKeymap
+  | FrameResult
+  | FrameNetIn
+  | FrameNetOut;
+
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Confere a forma do que o iframe mandou para a rede (o regras.js roda lá e pode mandar qualquer
+ * coisa ao site). O conteúdo é conferido de novo por quem recebe do outro lado (`parseMessage`).
+ */
+export function isFrameNetOut(m: FrameMessage): m is FrameNetOut {
+  const out = m as Partial<FrameNetOut>;
+  if (out.type !== 'bq:net-out' || typeof out.nonce !== 'string' || !isObject(out.msg))
+    return false;
+  const msg = out.msg as Partial<Record<string, unknown>>;
+  switch (msg.kind) {
+    case 'states':
+      return (
+        isObject(msg.states) && Object.values(msg.states).every(isObject) && isObject(msg.options)
+      );
+    case 'rejected':
+      return typeof msg.seat === 'string' && typeof msg.reason === 'string';
+    case 'cmd':
+      return isObject(msg.cmd) && typeof msg.cmd.type === 'string';
+    default:
+      return false;
+  }
+}
 
 const COMBO = /^[A-Za-z0-9+\-=[\]`;',./\\]{1,40}$/;
 const isKeyMap = (v: unknown): v is KeyMap =>

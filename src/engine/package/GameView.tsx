@@ -13,6 +13,7 @@ import {
   contentsHidden,
   ownerOf,
   type AttrValue,
+  type Command,
   type GameEnd,
   type GameState,
   type Piece,
@@ -21,6 +22,7 @@ import {
   type View,
 } from '@/engine/core';
 import { preloadImages } from '@/engine/data';
+import { applyFrom, statesFor } from '@/engine/net';
 import {
   ManagerProvider,
   useCheck,
@@ -38,7 +40,7 @@ import type { GestureHandler, InfoState, MenuItem } from '@/engine/render';
 import { Table, type TableApi } from '@/engine/render/konva';
 import { EventLog } from '@/engine/ui/EventLog';
 import { FullscreenBar, SettingsDialog } from './FullscreenHud';
-import type { LoadedGame } from './game';
+import type { LoadedGame, Match } from './game';
 import { HUD_PANELS, useFullscreen, useHudModes, type HudPanel } from './hud';
 import {
   builtinCommands,
@@ -49,7 +51,9 @@ import {
   type KeyCommand,
   type KeyPrefs,
 } from './keys';
-import { PieceInfo } from './PieceInfo';
+import { endTitle } from './ending';
+import { PieceInfo, RichText } from './PieceInfo';
+import { expandKeywordLinks } from './richText';
 import type { ActionContext, GameAction } from './rules';
 import { interpolate } from './interpolate';
 import type { HudItem, PlayerHudItem } from './manifest';
@@ -67,6 +71,30 @@ interface GameViewProps {
   onKeyPrefs?: (prefs: KeyPrefs) => void;
   /** Os atalhos em uso agora (o site os repassa ao jogo quando o foco está fora dele). */
   onKeymap?: (combos: Combo[]) => void;
+  /** Partida em rede: a tela fica no assento deste jogador, sem "Ver como". */
+  net?: GameNet;
+}
+
+/** Partida em rede (docs/PlanoPublicacao.md, parte 3). A rede em si fica fora do jogo. */
+export type GameNet = HostNet | GuestNet;
+
+/** Host: a partida de verdade roda aqui; ele publica o estado de cada assento e aplica os comandos. */
+export interface HostNet {
+  role: 'host';
+  seat: string;
+  /** O estado de cada assento (sem o que ele não vê), a cada mudança. */
+  publish(states: Record<string, GameState>): void;
+  /** Comandos dos convidados (o assento vale como `actor`); devolve o desligar. */
+  listen(fn: (seat: string, cmd: Command) => void): () => void;
+  /** O jogo recusou o comando de um convidado. */
+  reject(seat: string, reason: string): void;
+}
+
+/** Convidado: a partida vem pronta, com o Gestor remoto e os gestos e ações das regras. */
+export interface GuestNet {
+  role: 'guest';
+  seat: string;
+  match: Match;
 }
 
 /** 'turn' = a tela segue o jogador da vez (hot seat); ou o id de um jogador fixo. */
@@ -81,18 +109,38 @@ export function GameView({
   keyPrefs,
   onKeyPrefs,
   onKeymap,
+  net,
 }: GameViewProps) {
   const [round, setRound] = useState(0);
   const optionsKey = JSON.stringify(options ?? {}); // nova partida só se os valores mudarem
+  const guestMatch = net?.role === 'guest' ? net.match : null;
   const { manager, gestures, actions } = useMemo(
     () =>
+      guestMatch ??
       game.createMatch({
         players,
         options: JSON.parse(optionsKey) as Record<string, string>,
         seed: seed === undefined ? undefined : seed + round,
       }),
-    [game, players, optionsKey, seed, round],
+    [guestMatch, game, players, optionsKey, seed, round],
   );
+  // host: publica o estado de cada assento e aplica os comandos dos convidados
+  const host = net?.role === 'host' ? net : null;
+  useEffect(() => {
+    if (!host) return;
+    const seats = Array.from({ length: players }, (_, i) => `p${i + 1}`); // como em createMatch
+    const publish = () => host.publish(statesFor(manager, seats));
+    publish();
+    const off = manager.subscribe(publish);
+    const stop = host.listen((seat, cmd) => {
+      const r = applyFrom(manager, seat, cmd);
+      if (!r.ok) host.reject(seat, r.error);
+    });
+    return () => {
+      off();
+      stop();
+    };
+  }, [host, manager, players]);
   // espera as imagens da mesa inicial, para não aparecerem uma a uma
   useSuspenseQuery({
     queryKey: ['bqgame', 'imagens', game.manifest.id, players, optionsKey, round, seed],
@@ -103,7 +151,8 @@ export function GameView({
     },
     staleTime: Infinity,
   });
-  const [mode, setMode] = useState<ViewerMode>('turn');
+  const [chosen, setMode] = useState<ViewerMode>('turn');
+  const mode = net ? net.seat : chosen;
 
   return (
     <ManagerProvider manager={manager}>
@@ -115,8 +164,9 @@ export function GameView({
           gestures={gestures}
           actions={actions}
           mode={mode}
-          onMode={setMode}
-          onRestart={() => setRound((r) => r + 1)}
+          onMode={net ? undefined : setMode}
+          // desfazer e reiniciar: só o host (no convidado, o Gestor remoto recusa)
+          onRestart={guestMatch ? undefined : () => setRound((r) => r + 1)}
           keyPrefs={keyPrefs}
           onKeyPrefs={onKeyPrefs}
           onKeymap={onKeymap}
@@ -167,8 +217,10 @@ function GameLayout({
   gestures: GestureHandler;
   actions: readonly GameAction[];
   mode: ViewerMode;
-  onMode: (mode: ViewerMode) => void;
-  onRestart: () => void;
+  /** Sem ele, a tela é fixa (partida em rede): sem "Ver como". */
+  onMode?: (mode: ViewerMode) => void;
+  /** Sem ele (convidado), sem reiniciar nem desfazer. */
+  onRestart?: () => void;
   keyPrefs?: KeyPrefs;
   onKeyPrefs?: (prefs: KeyPrefs) => void;
   onKeymap?: (combos: Combo[]) => void;
@@ -420,6 +472,7 @@ function GameLayout({
           picked={pickedSet}
           onPick={onPick}
           decorate={game.decorate}
+          motion={game.motion}
           previewFace={game.previewFace}
           preview={shown('preview')}
           previewInfo={infoFor('preview')}
@@ -463,7 +516,7 @@ function GameLayout({
             )}
           </div>
         )}
-        <EndOverlay onRestart={onRestart} />
+        <EndOverlay game={game} mode={mode} onRestart={onRestart} />
       </div>
       {!full && (
         <aside className="bq-game-panel">
@@ -666,20 +719,66 @@ function Actions({
   );
 }
 
-const RESULT = { win: 'Vitória!', lose: 'Derrota', draw: 'Empate' } as const;
-
-/** Fim de partida por cima da mesa: resultado, mensagem, pontos, jogar de novo. */
-function EndOverlay({ onRestart }: { onRestart: () => void }) {
+/**
+ * Fim de partida por cima da mesa: o título (para quem olha), a mensagem, os pontos, o placar e
+ * jogar de novo.
+ */
+function EndOverlay({
+  game,
+  mode,
+  onRestart,
+}: {
+  game: LoadedGame;
+  mode: ViewerMode;
+  onRestart?: () => void;
+}) {
   const ended = useGame((s) => s.game.ended);
+  const players = useGame((s) => s.game.players);
+  const order = useGame((s) => s.game.playerOrder);
   const [dismissed, setDismissed] = useState<GameEnd | null>(null);
   if (!ended || dismissed === ended) return null;
+  // a tela é de um jogador: assento fixo (rede, "ver como") ou um jogador só
+  const seat = mode !== 'turn' ? mode : order.length === 1 ? order[0]! : null;
+  const nameOf = (id: string) => players[id]?.name ?? id;
+  const title = endTitle(ended, seat, nameOf);
   return (
-    <div className={`bq-end bq-end--${ended.result}`} role="dialog" aria-label="Fim de partida">
-      <h2>{RESULT[ended.result]}</h2>
+    <div className={`bq-end bq-end--${title.tone}`} role="dialog" aria-label="Fim de partida">
+      <h2>{title.text}</h2>
       {ended.message && <p>{ended.message}</p>}
       {ended.score !== undefined && <p className="bq-end-score">{ended.score} pontos</p>}
+      {!!ended.ranking?.length && (
+        <table className="bq-end-ranking" aria-label="Placar final">
+          <tbody>
+            {ended.ranking.map((r) => (
+              <tr
+                key={r.player}
+                className={ended.winners?.includes(r.player) ? 'bq-end-winner' : undefined}
+              >
+                <th scope="row">
+                  <span
+                    className="bq-player-color"
+                    style={{ background: players[r.player]?.color }}
+                  />
+                  {nameOf(r.player)}
+                  {r.player === seat && ' (você)'}
+                </th>
+                <td className="bq-end-value">{r.label ?? r.score}</td>
+                <td className="bq-end-text">
+                  {r.text && (
+                    <RichText
+                      html={expandKeywordLinks(r.text, game.keywords)}
+                      keywords={game.keywords}
+                      resolveAsset={game.resolveAsset}
+                    />
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       <div className="bq-game-buttons">
-        <button onClick={onRestart}>Jogar de novo</button>
+        {onRestart && <button onClick={onRestart}>Jogar de novo</button>}
         <button onClick={() => setDismissed(ended)}>Ver a mesa</button>
       </div>
     </div>
@@ -739,7 +838,8 @@ function Players({
 }: {
   items: PlayerHudItem[];
   mode: ViewerMode;
-  onMode: (mode: ViewerMode) => void;
+  /** Sem ele, sem "Ver como" (partida em rede: cada um vê o próprio assento). */
+  onMode?: (mode: ViewerMode) => void;
   /** `false`: o jogo passa a vez pelas regras; texto: rótulo do botão. */
   passButton: boolean | string;
 }) {
@@ -786,17 +886,19 @@ function Players({
             {passButton === true ? 'Passar a vez' : passButton}
           </button>
         )}
-        <label>
-          Ver como{' '}
-          <select value={mode} onChange={(e) => onMode(e.target.value)}>
-            <option value="turn">o jogador da vez</option>
-            {rows.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {onMode && (
+          <label>
+            Ver como{' '}
+            <select value={mode} onChange={(e) => onMode(e.target.value)}>
+              <option value="turn">o jogador da vez</option>
+              {rows.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
     </section>
   );
@@ -808,7 +910,8 @@ function Toolbar({
   onSettings,
   note,
 }: {
-  onRestart: () => void;
+  /** Sem ele (convidado numa partida em rede), sem desfazer nem reiniciar: são do host. */
+  onRestart?: () => void;
   onFullscreen: () => void;
   onSettings: () => void;
   note: string | null;
@@ -817,14 +920,16 @@ function Toolbar({
   return (
     <>
       <div className="bq-game-buttons">
-        <button
-          onClick={() => undo()}
-          disabled={canUndo !== true}
-          title={canUndo === true ? '' : canUndo}
-        >
-          Desfazer
-        </button>
-        <button onClick={onRestart}>Reiniciar</button>
+        {onRestart && (
+          <button
+            onClick={() => undo()}
+            disabled={canUndo !== true}
+            title={canUndo === true ? '' : canUndo}
+          >
+            Desfazer
+          </button>
+        )}
+        {onRestart && <button onClick={onRestart}>Reiniciar</button>}
         <button onClick={onFullscreen}>Tela cheia</button>
         <button onClick={onSettings} aria-label="Configurações" title="Configurações">
           ⚙

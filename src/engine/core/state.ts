@@ -65,11 +65,44 @@ export interface LogEntry {
   event: GameEvent;
 }
 
+/** Um jogador no placar final. */
+export interface RankEntry {
+  player: string;
+  score?: number;
+  /** Como o placar mostra o valor (ex.: "$34"). Padrão: o `score`. */
+  label?: string;
+  /** Texto rico ao lado (HTML limitado, como as descrições). */
+  text?: string;
+}
+
 /** Fim da partida (comando `endGame`). */
 export interface GameEnd {
-  result: 'win' | 'lose' | 'draw';
+  /** Solo e cooperativo: o resultado da mesa. Opcional com `winners`. */
+  result?: 'win' | 'lose' | 'draw';
+  /** Competitivo: quem venceu (mais de um = empate). O título depende de quem olha. */
+  winners?: string[];
+  /** Placar final, na ordem em que aparece. */
+  ranking?: RankEntry[];
   message?: string;
   score?: number;
+}
+
+/** Só os campos do fim de partida, sem os ausentes (o evento e o estado são JSON). */
+export function gameEndOf(src: GameEnd): GameEnd {
+  const end: GameEnd = {};
+  if (src.result !== undefined) end.result = src.result;
+  if (src.winners !== undefined) end.winners = [...src.winners];
+  if (src.ranking !== undefined) {
+    end.ranking = src.ranking.map(({ player, score, label, text }) => ({
+      player,
+      ...(score !== undefined && { score }),
+      ...(label !== undefined && { label }),
+      ...(text !== undefined && { text }),
+    }));
+  }
+  if (src.message !== undefined) end.message = src.message;
+  if (src.score !== undefined) end.score = src.score;
+  return end;
 }
 
 export interface GameState {

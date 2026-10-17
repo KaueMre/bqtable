@@ -50,7 +50,8 @@ export function FullscreenBar({
   onExit,
   keyOf,
 }: {
-  onRestart: () => void;
+  /** Sem ele (convidado numa partida em rede), sem desfazer nem reiniciar: são do host. */
+  onRestart?: () => void;
   passButton: boolean | string;
   modes: HudModes;
   onCycle: (id: HudPanel) => void;
@@ -70,14 +71,16 @@ export function FullscreenBar({
   };
   return (
     <div className="bq-fs-bar" role="toolbar" aria-label="Barra do jogo">
-      <IconButton
-        label="Desfazer"
-        icon="↶"
-        onClick={() => undo()}
-        disabled={canUndo !== true}
-        title={canUndo === true ? hint('Desfazer', 'undo') : `Desfazer: ${canUndo}`}
-      />
-      <IconButton label="Reiniciar" icon="⟳" onClick={onRestart} />
+      {onRestart && (
+        <IconButton
+          label="Desfazer"
+          icon="↶"
+          onClick={() => undo()}
+          disabled={canUndo !== true}
+          title={canUndo === true ? hint('Desfazer', 'undo') : `Desfazer: ${canUndo}`}
+        />
+      )}
+      {onRestart && <IconButton label="Reiniciar" icon="⟳" onClick={onRestart} />}
       {passButton !== false && (
         <IconButton
           label={passLabel}

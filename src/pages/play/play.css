@@ -56,3 +56,23 @@
   border-radius: 6px;
   color: #656d76;
 }
+
+.play-host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.play-host a {
+  word-break: break-all;
+}
+
+.play-host [role='alert'] {
+  color: #cf222e;
+}

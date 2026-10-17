@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -19,6 +20,8 @@ import {
   ownerOf,
   zoneSlots,
   type DropTarget,
+  type GameState,
+  type Manager,
   type Piece,
   type PieceId,
 } from '@/engine/core';
@@ -27,11 +30,21 @@ import { useCheck, useDispatch, useGame, useManager, useView, useViewer } from '
 import { candidateTargets, findDropTarget } from '../drop';
 import { defaultGestures, type Gesture } from '../gestures';
 import { handIndexAt, inHandBand, layoutHand } from '../hand';
+import {
+  diffPlaces,
+  isStill,
+  resolveMotion,
+  waypoints,
+  type MotionSpec,
+  type Place,
+  type Pose,
+} from '../motion';
 import { buildScene, toLocal } from '../scene';
 import type { MenuItem, TableProps } from '../types';
 import { useElementSize } from '../useElementSize';
 import { zoomAt, type View } from '../view';
 import { ContextMenu } from './ContextMenu';
+import { createMotionDirector, type AimState, type MotionDirector } from './motion';
 import { PiecePreview } from './PiecePreview';
 import { PieceView, type PieceHandlers, type ZoneMark } from './PieceView';
 
@@ -71,6 +84,27 @@ interface DragSession {
   starts: Map<PieceId, { x: number; y: number }>;
   indexes: [Konva.Group, number][];
   hoverKey: string;
+  /** Zonas que aceitam (como no `DragState`), para a cor da flecha. */
+  valid: Map<PieceId, Set<string>>;
+  /** Mira com flecha (`drag: "arrow"`): as peças ficam no lugar; o nó arrastado vai invisível. */
+  arrow: boolean;
+  aim: AimState;
+}
+
+/** O que um gesto do jogador deixa para a animação da jogada que ele causou. */
+interface HandOver {
+  /** De onde as peças saem (px da tela). */
+  origins: Map<PieceId, Pose>;
+  /** Peças que o jogador levou com o mouse até o lugar (não deslizam de novo). */
+  handled: Set<PieceId>;
+}
+
+/** O último desenho, para comparar com o próximo. */
+interface Shown {
+  manager: Manager;
+  game: GameState;
+  pieces: Record<PieceId, Piece>;
+  viewer: string | null;
 }
 
 /** Giro de uma zona: o conteúdo gira junto, rígido, em volta do centro dela. */
@@ -143,6 +177,7 @@ export function Table({
   hoverInfo,
   contextMenu,
   nameOf,
+  motion,
   handZoom = 1,
   handInset,
   apiRef,
@@ -255,6 +290,31 @@ export function Table({
   useEffect(() => {
     viewNow.current = view;
   });
+
+  // Movimento (render/motion.ts): o diretor anima por cima do que o React desenha, lendo daqui
+  const motionLayer = useRef<Konva.Layer>(null);
+  /** Onde cada peça foi desenhada da última vez (na mesa ou na faixa da mão). */
+  const places = useRef(new Map<PieceId, Place>());
+  const shownNow = useRef<Shown | null>(null);
+  const sizeNow = useRef(size);
+  const handOver = useRef<HandOver | null>(null);
+  const director = useRef<MotionDirector | null>(null);
+  useLayoutEffect(() => {
+    const d = createMotionDirector({
+      layer: () => motionLayer.current,
+      node: (id) => nodes.current.get(id),
+      place: (id) => places.current.get(id),
+      size: (id) => shownNow.current?.pieces[id]?.size,
+      view: () => viewNow.current,
+      screen: () => sizeNow.current,
+    });
+    director.current = d;
+    return () => {
+      d.reset();
+      director.current = null;
+    };
+  }, []);
+
   /** Depois de o mouse parar sobre a peça, abre a dica; ao sair, fecha (a não ser que vá para ela). */
   const scheduleTip = useCallback(() => {
     clearTimeout(tipShow.current);
@@ -307,6 +367,12 @@ export function Table({
     contextMenu,
     nameOf,
     decorate,
+    /** Movimento da peça: o do jogo, com o da zona onde ela está por cima. */
+    motionOf: (piece: Piece, all: Record<PieceId, Piece>) =>
+      resolveMotion(
+        motion?.(piece),
+        piece.parentId === null ? undefined : all[piece.parentId]?.zone?.motion,
+      ),
   };
   const latest = useRef(current);
   useEffect(() => {
@@ -446,10 +512,49 @@ export function Table({
       }
     };
 
+    /** Onde as peças estão na tela agora, para a jogada que vem animar a partir dali. */
+    const heldAt = (ids: PieceId[]): HandOver => {
+      const origins = new Map<PieceId, Pose>();
+      for (const g of ids) {
+        const p = director.current?.poseOf(g);
+        if (p) origins.set(g, p);
+      }
+      return { origins, handled: new Set(origins.keys()) };
+    };
+
+    /** Cor da flecha: o alvo sob o ponteiro aceitaria a peça? (mesmo teste do destaque) */
+    const aimState = (id: PieceId, sess: DragSession, target: DropTarget): AimState => {
+      if (target.zone === null) {
+        const cmd =
+          sess.members.length > 1
+            ? commandFor({
+                type: 'dragGroup',
+                id,
+                ids: sess.members,
+                target,
+                at: positions(sess.members, target),
+              })
+            : commandFor({ type: 'drag', id, target });
+        return cmd && latest.current.check(cmd) === true ? 'idle' : 'invalid';
+      }
+      const slots = sess.valid.get(target.zone);
+      if (!slots) return 'invalid';
+      const zone = manager.getState().pieces[target.zone]?.zone;
+      const usesSlots = zone?.layout === 'grid' || zone?.layout === 'slots';
+      const ok =
+        sess.members.length > 1 ||
+        !usesSlots ||
+        (target.slot !== undefined && slots.has(target.slot)) ||
+        !!zone?.autoFill;
+      return ok ? 'valid' : 'invalid';
+    };
+
     return {
       register(id, n, previous) {
-        if (n) nodes.current.set(id, n);
-        else if (!previous || nodes.current.get(id) === previous) nodes.current.delete(id);
+        if (n) {
+          nodes.current.set(id, n);
+          director.current?.attach(id, n);
+        } else if (!previous || nodes.current.get(id) === previous) nodes.current.delete(id);
       },
 
       select(id, additive = false) {
@@ -611,9 +716,15 @@ export function Table({
       dragStart(id, n) {
         clearTimeout(tipShow.current);
         setTip(null);
+        director.current?.stopAfter(); // pegar uma peça é outra ação: o efeito de antes para
         const members = membersFor(id);
         const group = groupOf(members);
+        director.current?.land(group); // pegou no meio do voo: a peça já está no lugar
         const groupNodes = group.flatMap((g) => nodes.current.get(g) ?? []);
+        const valid = validTargets(id, group, members);
+        const s = manager.getState();
+        const piece = s.pieces[id];
+        const arrow = !!piece && latest.current.motionOf(piece, s.pieces).drag === 'arrow';
         session.current = {
           members,
           group,
@@ -621,15 +732,18 @@ export function Table({
           starts: new Map(groupNodes.map((g) => [g.id(), g.position()])),
           indexes: groupNodes.map((g) => [g, g.zIndex()]),
           hoverKey: '',
+          valid,
+          arrow,
+          aim: 'idle',
         };
         for (const g of groupNodes) g.moveToTop();
-        setDrag({
-          id,
-          moving: new Set(group),
-          group: members.length > 1,
-          valid: validTargets(id, group, members),
-          hover: null,
-        });
+        if (arrow) {
+          // as peças ficam onde estão (uma cópia) e o nó vai junto com o ponteiro, invisível: o
+          // alvo é calculado como sempre
+          director.current?.aimStart(id, group);
+          transformer.current?.visible(false);
+        }
+        setDrag({ id, moving: new Set(group), group: members.length > 1, valid, hover: null });
       },
 
       dragMove(id, n) {
@@ -642,10 +756,14 @@ export function Table({
         }
         const target = dropTarget(id, n, sess.members);
         const key = `${target.zone}|${target.slot ?? ''}`;
-        if (key === sess.hoverKey) return;
-        sess.hoverKey = key;
-        const hover = target.zone === null ? null : { zone: target.zone, slot: target.slot };
-        setDrag((d) => d && { ...d, hover });
+        if (key !== sess.hoverKey) {
+          sess.hoverKey = key;
+          if (sess.arrow) sess.aim = aimState(id, sess, target);
+          const hover = target.zone === null ? null : { zone: target.zone, slot: target.slot };
+          setDrag((d) => d && { ...d, hover });
+        }
+        const pointer = sess.arrow ? n.getStage()?.getPointerPosition() : null;
+        if (pointer) director.current?.aimMove(pointer, sess.aim);
       },
 
       dragEnd(id, n) {
@@ -654,6 +772,12 @@ export function Table({
         setDrag(null);
         const members = sess?.members ?? [id];
         const target = dropTarget(id, n, members);
+        // de onde a animação da jogada sai: da mira, as peças paradas; senão, onde foram soltas
+        let held: HandOver;
+        if (sess?.arrow) {
+          held = { origins: director.current?.aimEnd() ?? new Map(), handled: new Set() };
+          transformer.current?.visible(true);
+        } else held = heldAt(sess?.group ?? [id]);
         // devolve a ordem original antes de o React reordenar pelo novo estado
         for (const [g, i] of [...(sess?.indexes ?? [])].sort((a, b) => a[1] - b[1])) g.zIndex(i);
         const before = manager.getState();
@@ -671,11 +795,16 @@ export function Table({
           cmd = commandFor({ type: 'drag', id, target });
         }
         if (cmd) dispatch(cmd);
-        settle(sess?.group ?? [id], manager.getState() === before);
+        const refused = manager.getState() === before;
+        if (!refused) handOver.current = held;
+        // da mira, a peça volta na hora (ela estava invisível com o ponteiro)
+        settle(sess?.group ?? [id], refused && !sess?.arrow);
       },
 
       transformStart(id, n) {
+        director.current?.stopAfter();
         const group = groupOf([id]);
+        director.current?.land(group);
         rotating.current = {
           group,
           center: n.position(),
@@ -716,11 +845,67 @@ export function Table({
         // a rotação do nó inclui a dos pais e a do layout; o comando leva só a da peça
         const rotation = piece.transform.rotation + (n.rotation() - sn.rotation);
         const cmd = commandFor({ type: 'rotate', id, rotation });
+        const held = heldAt(group);
         if (cmd) dispatch(cmd);
+        if (manager.getState() !== s) handOver.current = held;
         settle(group, manager.getState() === s);
       },
     };
   }, [manager, dispatch, refreshPeek, scheduleTip]);
+
+  // Movimento: depois de cada desenho, compara onde as peças estavam com onde estão agora. O
+  // React já pôs os nós no lugar novo; o diretor os anima antes do próximo quadro.
+  const game = useGame((s) => s.game);
+  const lastEvents = useGame((s) => s.lastEvents);
+  useLayoutEffect(() => {
+    const next = new Map<PieceId, Place>();
+    for (const n of scene) {
+      next.set(n.id, { space: 'world', x: n.x, y: n.y, rotation: n.rotation, scale: n.scale });
+    }
+    for (const [id, slot] of hand.slots) next.set(id, { space: 'hand', ...slot });
+    const prevPlaces = places.current;
+    places.current = next;
+    sizeNow.current = size;
+    const before = shownNow.current;
+    shownNow.current = { manager, game, pieces, viewer };
+    const d = director.current;
+    // primeira mesa, ou outra partida: nada a animar
+    if (!d || !before || before.manager !== manager) {
+      d?.reset();
+      handOver.current = null;
+      return;
+    }
+    // só a mão ou o tamanho mudou: o que está animando segue o lugar novo sozinho
+    if (before.game === game && before.viewer === viewer) return;
+    const held = handOver.current;
+    handOver.current = null;
+    d.stopAfter(); // outra jogada: o efeito da de antes para
+    const { moves, appeared } = diffPlaces(prevPlaces, next, before.pieces, pieces);
+    const specs = new Map<PieceId, MotionSpec>();
+    for (const id of [...moves.map((m) => m.id), ...appeared]) {
+      const piece = pieces[id];
+      const spec = piece && latest.current.motionOf(piece, pieces);
+      if (spec && !isStill(spec)) specs.set(id, spec);
+    }
+    if (!specs.size) return;
+    // casa por casa: os lugares por onde a peça passou na jogada
+    const stops = new Map<PieceId, Pose[]>();
+    for (const m of moves) {
+      if (!m.placed || !specs.has(m.id) || m.to.space !== 'world') continue;
+      const w = waypoints(lastEvents, m.id, pieces, sceneFilter);
+      if (w.length) stops.set(m.id, w);
+    }
+    d.play({
+      moves,
+      appeared,
+      specs,
+      origins: held?.origins ?? new Map(),
+      handled: held?.handled ?? new Set(),
+      stops,
+      undo: lastEvents.length === 0,
+      viewerChanged: before.viewer !== viewer,
+    });
+  });
 
   const marks = useMemo(() => {
     if (!drag) return null;
@@ -1079,6 +1264,8 @@ export function Table({
             );
           })}
         </Layer>
+        {/* movimento: peças voando, sombras, luzes e a flecha de mira (render/konva/motion.ts) */}
+        <Layer ref={motionLayer} name="motion" listening={false} />
         <Layer>
           <Transformer
             ref={transformer}

@@ -67,7 +67,7 @@ Assim dá para manter o pacote pequeno (imagens num servidor, só o manifest no 
   "description": "…",               // opcional
   "players": { "min": 1, "max": 4, "names": [ … ], "colors": [ … ], "seats": { … } }, // opcional (padrão 1 a 1)
   "options": [ … ],                 // opções escolhidas antes da partida (seção 9)
-  "table": { "background": "#2d6a4f" },
+  "table": { "background": "#2d6a4f", "motion": { … } }, // motion: movimento padrão (seção 4)
   "assets": { "base": "https://…/" },
   "kinds": [ … ],                   // tipos de peça (obrigatório)
   "data": { … },                    // conjuntos de dados
@@ -109,6 +109,59 @@ Erros no arquivo aparecem na tela com o caminho do problema, por exemplo `kinds[
 - `hiddenStatuses`: status em que **ninguém** vê o que a peça é, nem o dono (o verso de uma carta no deck). A mesa mostra só a face desse status; o painel da peça mostra "virada"; o log esconde as jogadas com ela, inclusive a ordem de um embaralhar. Em zonas com dono e `privacy`, isso já vale para os outros jogadores (seção 13); `hiddenStatuses` vale para todos, em qualquer zona.
 - `badges`: selos nos cantos, com `{campos}` dos atributos da peça: `[{ "text": "{valor}", "corner": "tr", "color": "#fff", "background": "#cf222e" }]` (`corner`: `tl`, `tr` (padrão), `bl`, `br`). Texto vazio = sem selo; peça virada não mostra selo.
 - `hotspots`: áreas da peça, em coordenadas da peça (canto superior esquerdo = 0, 0): `[{ "id": "esquerda", "x": 0, "y": 0, "w": 30, "h": 90, "label": "Foco +1" }]`. O duplo clique numa delas manda o gesto `activate` com `area: "esquerda"` (`game.gesture` decide o comando). Com a peça selecionada, as áreas aparecem com contorno e rótulo.
+- `motion`: como as peças desse tipo se movem na tela (abaixo).
+
+### Movimento na tela (`motion`)
+
+```json
+{
+  "kind": "mascote",
+  "motion": {
+    "drag": "arrow",
+    "place": { "type": "move", "path": "arc", "duration": 300 },
+    "after": "glow"
+  }
+}
+```
+
+Três momentos, cada um opcional. Sem `motion`, nada muda: a peça segue o ponteiro, some de um lugar e aparece no outro. É só desenho: nenhuma regra depende disso, e cada tela anima o que vê.
+
+| Campo | Valor | O que acontece |
+|---|---|---|
+| `drag` (arrastar) | `follow` (padrão) | A peça vai junto com o ponteiro. |
+| | `arrow` | A peça fica no lugar e uma flecha curva sai dela até o ponteiro, como a de mirar do Slay the Spire: azul sobre um lugar que aceita a peça, vermelha onde ela seria recusada, branca sobre a mesa livre. Os destaques das zonas continuam. |
+| `place` (chegar) | `instant` (padrão) | Aparece direto no lugar novo. |
+| | `drop` | Aparece um pouco acima do lugar e cai nele, com sombra: dá a ideia de 3D e mostra a todos onde a peça chegou. |
+| | `move` | Vai do lugar de antes até o novo, por cima das outras peças. `"path": "arc"` faz uma curva, subindo e descendo, com sombra; `"line"` (padrão) vai reto. |
+| | `showcase` | Cresce em evidência na tela (`"at"`: `center` (padrão), `left` ou `right`), fica parada `hold` ms (padrão 700) e vai ao lugar. |
+| `after` (depois) | `none` (padrão) | Nada. |
+| | `shake` | A peça treme (padrão 0,6 s). |
+| | `glow` | Uma luz em volta da peça, pulsando de leve (padrão: até a próxima jogada). |
+
+Com ajustes, `place` e `after` viram objetos: `{ "type": "move", "duration": 350, "path": "arc" }` (`duration` em ms: a queda do `drop`, cada trecho do `move`, cada ida do `showcase`) e `{ "type": "glow", "duration": 1500, "color": "#ffd866" }` (`duration` em ms, ou `"next"`: até a próxima jogada).
+
+Onde configurar, do mais geral ao mais específico (o mais específico vence):
+
+- `table.motion`: o padrão de todos os kinds.
+- `kinds[].motion`: o do tipo, campo a campo por cima do da mesa.
+- `zone.motion` (só `place` e `after`): como as peças **chegam nesta zona**. Ex.: a carta vai da mão para a zona de jogadas em evidência, mas chega à mão só deslizando.
+
+```json
+{ "kind": "carta", "motion": { "drag": "arrow", "place": "move" } }
+{ "id": "jogadas", "kind": "zona", "zone": { "layout": "row", "motion": { "place": "showcase", "after": "glow" } } }
+```
+
+Quando anima:
+
+- Em toda mudança de lugar: regras, ações, o menu **Mover**, outro jogador na rede e o próprio arrasto. Peça arrastada sai de onde o jogador a soltou; com `arrow`, sai do lugar de antes.
+- **Casa por casa:** quando as regras levam a peça por vários lugares numa jogada só (vários `dropInto` num `batch` ou em reações), o `move` passa por cada um, em ordem (a mascote que anda 3 casas e desvia não corta na diagonal). Até 2,4 s no total; com muitos passos, cada trecho fica mais curto.
+- Quem só se ajeita (a fila que fecha o buraco, a mão que abre espaço, a pilha embaralhada) desliza rápido no lugar, sem efeito depois, se o kind tem `place`.
+- Peça nova (`createPiece`): `drop` e `showcase` mostram a chegada; `move` não tem de onde sair e ela aparece direto.
+- Várias em evidência na mesma jogada ficam lado a lado (até 6; mais que isso vão direto ao lugar). Uma jogada seguinte espera a evidência desta liberar.
+- Qualquer jogada nova, ou pegar uma peça, para os efeitos de depois.
+- **Desfazer:** a peça volta deslizando, sem evidência nem efeito.
+- Mais de 40 peças mudando de lugar de uma vez: as que passarem disso vão direto.
+- Com "reduzir movimento" ligado no sistema (`prefers-reduced-motion`), nada voa nem treme; a luz fica, sem pulsar.
 
 ## 5. Peças e zonas
 
@@ -142,7 +195,7 @@ Layouts de zona:
 | `fan` | leque, como uma mão | `fan: { spacing, arc }` |
 | `row` | fila: em ordem, coladas a partir de uma ponta; se uma sai, as outras se reorganizam | `row: { gap, align }` (`align`: `start` (padrão), `center` ou `end`) |
 
-Comuns a todos: `accepts: { kinds?, tags? }`, `capacity`, `statusOnEnter`, `statusOnLeave`, `rotationOnEnter` (rotação que a peça ganha ao entrar: uma carta girada volta reta para o deck), e os de jogadores: `privacy`, `backStatus`, `openToOthers` (seção 13). Em `grid` e `slots`, `"autoFill": true` põe a peça sempre no primeiro encaixe livre, não importa onde ela caiu. `"outline": false` tira o contorno, as casas e o rótulo da zona (casas desenhadas sobre a arte de um tabuleiro); durante um arrasto, o destaque de onde soltar continua aparecendo.
+Comuns a todos: `accepts: { kinds?, tags? }`, `capacity`, `statusOnEnter`, `statusOnLeave`, `rotationOnEnter` (rotação que a peça ganha ao entrar: uma carta girada volta reta para o deck), `motion` (como as peças chegam nela na tela, seção 4), e os de jogadores: `privacy`, `backStatus`, `openToOthers` (seção 13). Em `grid` e `slots`, `"autoFill": true` põe a peça sempre no primeiro encaixe livre, não importa onde ela caiu. `"outline": false` tira o contorno, as casas e o rótulo da zona (casas desenhadas sobre a arte de um tabuleiro); durante um arrasto, o destaque de onde soltar continua aparecendo.
 
 O rótulo de uma zona é o texto da face dela (`"faces": { "default": "Mão" }`). Zona com imagem não tem rótulo.
 
@@ -428,7 +481,7 @@ O `state` é só leitura: toda mudança é um comando. Comandos que vêm da tela
 
 ### Eventos
 
-`pieceCreated`, `pieceRemoved`, `pieceMoved`, `pieceRotated`, `statusChanged { id, from, to }`, `attrChanged { id, key, from, to }`, `globalChanged`, `playerAttrChanged`, `pieceLeftZone { id, zone }`, `piecePlaced { id, from, to }`, `pieceEnteredZone { id, zone, slot }`, `zoneShuffled { zone, order }`, `activePlayerChanged { from, to }`, `playerAdded { player }`, `message { text, to? }` (comando `log`), `piecesDropped { ids, zone }` (fim de um `dropMany`, depois de todas as peças), `choiceRequested`, `choiceMade`, `gameEnded { result, message?, score? }`, `rngAdvanced` (sorteio: bloqueia o desfazer). Um `statusChanged` com `revealsInfo: true` (ver `reveals`, seção 4) também bloqueia.
+`pieceCreated`, `pieceRemoved`, `pieceMoved`, `pieceRotated`, `statusChanged { id, from, to }`, `attrChanged { id, key, from, to }`, `globalChanged`, `playerAttrChanged`, `pieceLeftZone { id, zone }`, `piecePlaced { id, from, to }`, `pieceEnteredZone { id, zone, slot }`, `zoneShuffled { zone, order }`, `activePlayerChanged { from, to }`, `playerAdded { player }`, `message { text, to? }` (comando `log`), `piecesDropped { ids, zone }` (fim de um `dropMany`, depois de todas as peças), `choiceRequested`, `choiceMade`, `gameEnded { result?, winners?, ranking?, message?, score? }`, `rngAdvanced` (sorteio: bloqueia o desfazer). Um `statusChanged` com `revealsInfo: true` (ver `reveals`, seção 4) também bloqueia.
 
 ### Log legível
 
@@ -508,6 +561,18 @@ O verso é a face do status `backStatus` (padrão `"faceDown"`). O log e o paine
 
 Com `"hand": true`, a mão do jogador que olha a tela vira a faixa embaixo dela (seção 5).
 
+### Partida em rede
+
+Com um jogo aberto, **Hospedar** cria uma sala e mostra o link (`/jogar?sala=…`). Quem abre o link entra no próximo assento livre e recebe o pacote do host, sem precisar do arquivo. A partida roda só no navegador do host. Cada convidado recebe o estado do jeito que o assento dele vê (`redactFor`, em `src/engine/net`), e a tela de cada um fica fixa no próprio assento. Desfazer e reiniciar são só do host.
+
+O que muda para quem escreve o jogo:
+
+- **O que não pode ser visto não sai do aparelho do host.** As peças escondidas não chegam ao convidado. As viradas chegam sem face, atributos nem tags, e com um apelido no lugar do id (`baralho~12`, a 13ª da pilha): o id costuma dizer qual é a carta (`rascunho-2`). Por isso, um gesto (`game.gesture`) ou uma ação não deve depender do id de uma peça virada. O apelido muda quando a ordem muda (um embaralhar não deixa seguir a carta).
+- **Baralho virado precisa de `hiddenStatuses`** (seção 4). Sem ele, a carta virada no deck aparece como verso na tela, mas o id e os atributos dela vão para todos, e a ordem do baralho deixa de ser segredo.
+- O host recusa o comando de um convidado que cite o id real de uma peça que ele não vê (os ids dá para adivinhar pelos dados do jogo).
+- Os comandos sem dono (`setGlobal`, `endGame`, os comandos do jogo) passam para qualquer jogador, como na mesa local. Se o jogo precisa de restrição, a regra confere `cmd.actor`, como no `comprar` da pirâmide.
+- O host recebe a partida inteira e poderia trapacear olhando o próprio navegador.
+
 ### Recursos no painel (`playerHud`)
 
 ```json
@@ -586,6 +651,23 @@ game.rule({
 ```
 
 `result` é `"win"`, `"lose"` ou `"draw"`. Ao encerrar, o resto da jogada não roda e nenhum comando novo é aceito (a mensagem é "a partida acabou"). A tela mostra o resultado por cima da mesa, com **Jogar de novo** e **Ver a mesa**; desfazer (se nada foi revelado) volta para o jogo.
+
+Num jogo competitivo, diga quem venceu, e o placar se quiser:
+
+```js
+{ type: 'endGame',
+  winners: ['p2'],                  // um ou mais (mais de um = empate)
+  ranking: [                        // na ordem em que aparece
+    { player: 'p2', score: 34, label: '$34', text: 'Compra um <b>chapéu</b> e…' },
+    { player: 'p1', score: 21, label: '$21' },
+  ],
+  message: 'Fim das 3 corridas' }
+```
+
+- Com `winners`, o `result` fica opcional, e o título depende de quem olha: **"Você venceu!"** para quem venceu, **"Vitória de Bia"** para os outros, **"Empate: Ana e Bia"** com mais de um vencedor. Quando a tela não é de um jogador só (mesmo aparelho, seguindo a vez), aparece o nome de quem venceu.
+- `ranking` vira uma tabela: a cor e o nome do jogador, o `label` (ou o `score`) e o `text`, em texto rico (as regras de HTML e de palavras-chave da seção 17). Quem está em `winners` aparece em negrito.
+- O comando recusa um jogador que não existe ou que aparece duas vezes em `winners` ou em `ranking`, e um fim sem `result` nem `winners`.
+- O fim é público: na rede, todos recebem o mesmo placar.
 
 ## 15. Ações do jogo (`game.action`)
 

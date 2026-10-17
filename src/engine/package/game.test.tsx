@@ -129,6 +129,40 @@ describe('erros no pacote', () => {
   });
 });
 
+describe('movimento (motion)', () => {
+  const load = (manifest: object) => loadGame({ manifest: { ...base, ...manifest } });
+
+  it('o padrão da mesa com o do kind por cima; a zona guarda o dela', async () => {
+    const game = await load({
+      table: { motion: { place: 'move', after: 'glow' } },
+      kinds: [{ kind: 'k', motion: { drag: 'arrow', after: 'none' } }, { kind: 'z' }],
+      setup: [
+        {
+          pieces: [
+            { id: 'a', kind: 'k' },
+            { id: 'pilha', kind: 'z', zone: { layout: 'stack', motion: { place: 'showcase' } } },
+          ],
+        },
+      ],
+    });
+    const { a, pilha } = game.createManager({ players: 1 }).getState().pieces;
+    expect(game.motion(a!)).toEqual({ place: 'move', after: 'none', drag: 'arrow' });
+    expect(game.motion(pilha!)).toEqual({ place: 'move', after: 'glow' });
+    expect(pilha!.zone!.motion).toEqual({ place: 'showcase' });
+  });
+
+  it('sem motion em lugar nenhum: nada', async () => {
+    const game = await load({ setup: [{ pieces: [{ id: 'a', kind: 'k' }] }] });
+    expect(game.motion(game.createManager({ players: 1 }).getState().pieces.a!)).toBeUndefined();
+  });
+
+  it('tipo de movimento desconhecido é acusado no carregamento', async () => {
+    await expect(
+      load({ kinds: [{ kind: 'k', motion: { place: 'voar' } }], setup: [] }),
+    ).rejects.toThrow(/kinds\[0\]\.motion\.place/);
+  });
+});
+
 describe('exemplo: pirâmide (.bqgame com regras.js)', () => {
   const abrir = async (players = 2) => {
     const game = await loadGame({ url: '/exemplos/piramide.bqgame' });

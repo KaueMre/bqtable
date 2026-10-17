@@ -2,6 +2,7 @@ export * from './commands';
 export * from './events';
 export * from './kinds';
 export * from './manager';
+export * from './motion';
 export * from './piece';
 export * from './prefab';
 export * from './result';

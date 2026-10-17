@@ -1,6 +1,7 @@
 import { devtools } from 'zustand/middleware';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { Command, GameEvent, GameState, Manager, Result } from '@/engine/core';
+import { isRemoteManager } from '@/engine/net';
 
 export interface GameStoreState {
   game: GameState;
@@ -61,5 +62,9 @@ function createGameStore(manager: Manager): GameStore {
       events[0]?.type ?? 'undo/clearHistory',
     );
   });
+  // convidado: a recusa do host chega depois do dispatch, e aparece igual a uma recusa local
+  if (isRemoteManager(manager)) {
+    manager.onReject((reason) => store.setState({ lastError: reason }, false, 'refused'));
+  }
   return store;
 }

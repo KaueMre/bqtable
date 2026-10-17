@@ -9,7 +9,7 @@ import {
 } from './piece';
 import { err, ok, type Result } from './result';
 import { shuffle } from './rng';
-import { PLAYER_COLORS, type GameEnd, type GameState, type PlayerState } from './state';
+import { gameEndOf, PLAYER_COLORS, type GameEnd, type GameState, type PlayerState } from './state';
 import {
   childrenOf,
   dropError,
@@ -72,7 +72,7 @@ export type BuiltinCommand =
       buttons?: { value: AttrValue; label: string }[]; // respostas extras ("Pular", "Terminar")
       context?: AttrValue;
     }
-  | { type: 'endGame'; result: 'win' | 'lose' | 'draw'; message?: string; score?: number }
+  | ({ type: 'endGame' } & GameEnd) // `result` (solo, cooperativo) ou `winners` (competitivo)
   | { type: 'log'; message: string; to?: string } // mensagem no log (`to`: só esse jogador vê)
   | { type: 'choose'; choiceId: string; value: AttrValue }
   | { type: 'batch'; commands: Command[] }; // vários comandos numa jogada só: tudo ou nada
@@ -405,13 +405,11 @@ export const builtinCommands: CommandDef[] = [
     return [{ type: 'zoneShuffled', zone, order }];
   }),
 
-  builtin('endGame', ({ result, message, score }, { state }) => {
+  builtin('endGame', (cmd, { state }) => {
     if (state.ended) return 'a partida já acabou';
-    if (!['win', 'lose', 'draw'].includes(result)) return `resultado inválido: "${result}"`;
-    const end: GameEnd = { result };
-    if (message !== undefined) end.message = message;
-    if (score !== undefined) end.score = score;
-    return [{ type: 'gameEnded', ...end }];
+    const invalid = checkGameEnd(cmd, state);
+    if (invalid) return invalid;
+    return [{ type: 'gameEnded', ...gameEndOf(cmd) }];
   }),
 
   builtin('log', ({ message, to }, { state }) => {
@@ -487,3 +485,46 @@ export const builtinCommands: CommandDef[] = [
     ];
   }),
 ];
+
+/** O motivo da recusa de um `endGame`, ou `null` se estiver certo. */
+function checkGameEnd(end: GameEnd, state: GameState): string | null {
+  const { result, winners, ranking } = end;
+  if (result === undefined && winners === undefined) return 'endGame precisa de result ou winners';
+  if (result !== undefined && !['win', 'lose', 'draw'].includes(result)) {
+    return `resultado inválido: "${result}"`;
+  }
+  const players = (list: unknown[], field: string) => {
+    const seen = new Set<unknown>();
+    for (const p of list) {
+      if (typeof p !== 'string' || !state.players[p])
+        return `${field}: jogador "${String(p)}" não existe`;
+      if (seen.has(p)) return `${field}: "${p}" aparece duas vezes`;
+      seen.add(p);
+    }
+    return null;
+  };
+  if (winners !== undefined) {
+    if (!Array.isArray(winners) || winners.length === 0)
+      return 'winners precisa de um jogador ou mais';
+    const bad = players(winners, 'winners');
+    if (bad) return bad;
+  }
+  if (ranking !== undefined) {
+    if (!Array.isArray(ranking)) return 'ranking precisa ser uma lista';
+    for (const r of ranking) {
+      if (typeof r !== 'object' || r === null) return 'ranking: cada item precisa de player';
+      if (r.score !== undefined && !Number.isFinite(r.score))
+        return `ranking: score inválido de "${r.player}"`;
+      for (const key of ['label', 'text'] as const) {
+        if (r[key] !== undefined && typeof r[key] !== 'string')
+          return `ranking: ${key} de "${r.player}" precisa ser texto`;
+      }
+    }
+    const bad = players(
+      ranking.map((r) => r.player),
+      'ranking',
+    );
+    if (bad) return bad;
+  }
+  return null;
+}

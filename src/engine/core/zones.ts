@@ -1,3 +1,4 @@
+import type { ZoneMotion } from './motion';
 import type { Piece, PieceId, Size } from './piece';
 import { err, ok, type Result } from './result';
 
@@ -52,6 +53,8 @@ export interface ZoneSpec {
   backStatus?: string;
   /** Outros jogadores também podem soltar peças aqui (padrão: só o dono). */
   openToOthers?: boolean;
+  /** Como as peças chegam aqui na tela (vence o `motion` do kind delas). Só desenho. */
+  motion?: ZoneMotion;
 }
 
 /** Para onde uma peça vai. `zone: null` é a mesa (raiz). */

@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Piece, PieceId } from '@/engine/core';
+import type { Motion, Piece, PieceId } from '@/engine/core';
 import type { GestureHandler } from './gestures';
 
 /** Selo num canto da peça (ex.: o valor atual de um cliente). */
@@ -109,5 +109,11 @@ export interface TableProps {
   nameOf?: (piece: Piece) => string;
   /** Selos e áreas clicáveis de cada peça (a peça como o jogador da tela a vê). */
   decorate?: (piece: Piece) => PieceDecoration | undefined;
+  /**
+   * Como a peça se move na tela: arrasto (segue o ponteiro ou mira com uma flecha), chegada ao
+   * lugar novo e efeito depois. A zona onde ela chega pode trocar a chegada e o efeito
+   * (`zone.motion`). Padrão: nada animado.
+   */
+  motion?: (piece: Piece) => Motion | undefined;
   className?: string;
 }

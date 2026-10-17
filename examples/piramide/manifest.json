@@ -32,6 +32,7 @@
     {
       "kind": "carta",
       "statuses": ["faceDown", "faceUp"],
+      "hiddenStatuses": ["faceDown"],
       "attributes": {
         "type": "object",
         "properties": {

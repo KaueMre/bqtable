@@ -175,6 +175,10 @@
   gap: 8px;
   align-items: center;
   min-width: 280px;
+  max-width: min(640px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  box-sizing: border-box;
   padding: 24px 32px;
   border-radius: 10px;
   background: rgb(255 255 255 / 0.95);
@@ -203,6 +207,47 @@
 .bq-end-score {
   font-size: 20px;
   font-weight: 600;
+}
+
+/* placar final (`ranking`): cor e nome, valor, texto */
+.bq-end-ranking {
+  border-collapse: collapse;
+  margin-top: 4px;
+  text-align: left;
+}
+
+.bq-end-ranking th,
+.bq-end-ranking td {
+  padding: 6px 8px;
+  border-top: 1px solid #d0d7de;
+  vertical-align: top;
+}
+
+.bq-end-ranking th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bq-end-ranking .bq-player-color {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.bq-end-winner th,
+.bq-end-winner .bq-end-value {
+  font-weight: 700;
+}
+
+.bq-end-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bq-end-text {
+  font-size: 13px;
+  color: #424a53;
 }
 
 .bq-actions {

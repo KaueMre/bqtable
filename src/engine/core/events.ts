@@ -9,7 +9,14 @@ import {
   type Piece,
   type PieceId,
 } from './piece';
-import type { GameEnd, GameState, PendingChoice, PlayerState } from './state';
+import {
+  gameEndOf,
+  type GameEnd,
+  type GameState,
+  type PendingChoice,
+  type PlayerState,
+  type RankEntry,
+} from './state';
 import type { Placement } from './zones';
 
 /** Fato que aconteceu. Precisa ser JSON. `revealsInfo` impede desfazer daqui para trás. */
@@ -41,7 +48,14 @@ export type BuiltinEvent =
   | { type: 'playerAdded'; player: PlayerState }
   | { type: 'piecesDropped'; ids: PieceId[]; zone: PieceId | null } // fim de um dropMany
   | { type: 'message'; text: string; to?: string } // comando `log`: texto para o log
-  | { type: 'gameEnded'; result: GameEnd['result']; message?: string; score?: number };
+  | {
+      type: 'gameEnded';
+      result?: GameEnd['result'];
+      winners?: string[];
+      ranking?: RankEntry[];
+      message?: string;
+      score?: number;
+    };
 
 export type EventOf<T extends BuiltinEvent['type']> = Extract<BuiltinEvent, { type: T }>;
 
@@ -122,12 +136,8 @@ export function applyEvent(d: Draft<GameState>, ev: GameEvent): void {
       d.playerOrder.push(e.player.id);
       d.activePlayer ??= e.player.id;
       break;
-    case 'gameEnded': {
-      const end: GameEnd = { result: e.result };
-      if (e.message !== undefined) end.message = e.message;
-      if (e.score !== undefined) end.score = e.score;
-      d.ended = end;
+    case 'gameEnded':
+      d.ended = castDraft(gameEndOf(e));
       break;
-    }
   }
 }

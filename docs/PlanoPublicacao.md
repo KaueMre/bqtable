@@ -198,7 +198,7 @@ host:      Transport → site (marca o assento) → iframe (bq:net-in) → manag
 convidado: Transport → site → iframe (bq:net-in) → RemoteManager.setState
 ```
 
-### [ ] 3.1 Estado por jogador e RemoteManager (motor, sem rede)
+### [x] 3.1 Estado por jogador e RemoteManager (motor, sem rede)
 
 **Agente:** Opus · **Depende de:** 1.0
 
@@ -212,9 +212,9 @@ Tudo em `src/engine/net/`, com testes em Node:
 
 **Aceite:** `pnpm test && pnpm typecheck`.
 
-**Resultado:**
+**Resultado:** `src/engine/net/` com `redactFor`, `commandFrom` e `createRemoteManager` (17 testes, com a pirâmide de ponta a ponta). O plano não previa um vazamento: o id de uma carta diz qual ela é (`rascunho-2`). Por isso, cada peça virada para quem vê ganha um apelido pela posição (`baralho~12`, `p2-mao~0`), que muda quando a ordem muda, e o host traduz de volta com `commandFrom`, que também força o `actor` do assento, inclusive dentro de `batch`. O log perde as entradas que citam peças que ele não vê, e o `pending` sai sem `resume` e sem `context`. A recusa do host chega por `remote.reject(motivo)` e vira o `lastError` do store (a mesma barra de "Recusado:"). A pirâmide ganhou `hiddenStatuses: ["faceDown"]` na carta (sem isso, o baralho era público no estado) e o `public/exemplos/piramide.bqgame` foi refeito. **Limites:** o histórico de uma carta já revelada continua no log, e os comandos sem regra de dono (`setGlobal`, `endGame`, comandos do jogo) passam para qualquer assento, como na mesa local.
 
-### [ ] 3.2 Protocolo e sessões, com transporte em memória e entre abas
+### [x] 3.2 Protocolo e sessões, com transporte em memória e entre abas
 
 **Agente:** Opus · **Depende de:** 3.1
 
@@ -226,9 +226,9 @@ Tudo em `src/engine/net/`, com testes em Node:
 
 **Aceite:** testes com `MemoryTransport` cobrindo entrar, receber o pacote, jogar, comando do assento errado recusado e `actor` forjado sobrescrito.
 
-**Resultado:**
+**Resultado:** `src/engine/net/protocol.ts` (mensagens `v: 1` com zod, `parseMessage`, `sha256`), `transport.ts` (`Transport`, `createMemoryNetwork` e `createBroadcastTransports`, ambos com `host(sala)` e `join(sala)`; o id do host é o id da sala) e `session.ts` (`createHostSession` e `createGuestSession`). O host aplica com `applyFrom(manager, assento, cmd)` e publica com `statesFor(manager, assentos)`. O `bye` também avisa "mesa cheia" e "o host fechou a mesa", e o convidado fecha se o hash não conferir. 10 testes novos, com a pirâmide e um pacote de 3 pedaços, mais um teste do `BroadcastChannel` no Node. **Para a 3.4:** o controle de fluxo fica no transporte; a sessão manda todos os pedaços de uma vez.
 
-### [ ] 3.3 Integração no site e no iframe (duas abas)
+### [x] 3.3 Integração no site e no iframe (duas abas)
 
 **Agente:** Opus · **Depende de:** 3.2
 
@@ -241,7 +241,7 @@ Tudo em `src/engine/net/`, com testes em Node:
 
 **Aceite:** testes de componente (`FrameApp` com `role`) e teste manual com duas abas jogando a pirâmide pelo `BroadcastChannelTransport`.
 
-**Resultado:**
+**Resultado:** o `FrameLoad.net` (`role`, `seat`, mais `players` e `options` do host para o convidado) e as mensagens `bq:net-in`/`bq:net-out` (o site confere com `isFrameNetOut`). No iframe, o `GameView` ganhou `net`: o host publica `statesFor` dos assentos `p1…pN` e aplica com `applyFrom`; o convidado (`GuestGame`) espera o primeiro estado e joga com o `RemoteManager`, com gestos e ações de uma partida local com as mesmas opções. A tela fica no assento, sem "Ver como"; desfazer e reiniciar só aparecem no host. No site, `src/pages/play/rede.ts` tem o `FrameLink` (ponte que guarda o que chega antes), `abrirMesa` (a rede só abre quando chega o primeiro estado, e o `welcome` leva jogadores e opções) e `entrarNaMesa`. A `PlayPage` ganhou **Hospedar** (o iframe recomeça com 2 jogadores e a tela no p1), o link, **Copiar**, **Encerrar**, a lista de quem entrou e `/jogar?sala=` com o progresso do pacote. Testes: `FrameApp.net.test.tsx` e `rede.test.ts`, 411 no total. Teste com duas abas (Playwright, `pnpm dev`) no Chrome e no Firefox: entrar, receber o pacote, passar a vez nos dois sentidos, comprar com duplo clique, arrastar a carta do topo do baralho pelo apelido (`baralho~12`), recusa ao comprar para a mão do host, terceiro convidado com "mesa cheia" e "o host fechou a mesa" ao encerrar. Nenhum erro no console além do `favicon.ico`, que já faltava.
 
 ### [ ] 3.4 WebRTC (versão base)
 
@@ -256,7 +256,7 @@ Tudo em `src/engine/net/`, com testes em Node:
 
 **Aceite:** na URL publicada, dois aparelhos em redes diferentes (por exemplo Wi-Fi e 4G) jogam a pirâmide. Anotar no Resultado quais combinações de rede conectaram.
 
-**Resultado:**
+**Resultado:** `src/engine/net/peerjs.ts` (`createPeerJsTransports`). O host fica no servidor público do PeerJS com o id `bqtable-<sala>`, e o convidado conecta com `reliable: true` (sem isso, o PeerJS abre o canal fora de ordem) e `serialization: 'raw'`. As mensagens vão em quadros binários de até 32 KiB (`frames.ts`): o pedaço de 16 KiB cabe num quadro, e o estado grande vai em vários. O controle de fluxo é uma fila por conexão: para acima de 1 MiB no `bufferedAmount` e volta no `bufferedamountlow` (256 KiB). Usa os STUN do Google e da Cloudflare. `Transport.onStatus` diz quando a sala abriu ou por que falhou: ICE falhou, 20 s sem abrir ou canal fechado antes de abrir viram "a rede bloqueou a conexão direta…, tente os dados do celular"; há também "a sala não existe" e "servidor do PeerJS fora do ar". O PeerJS é carregado só ao hospedar ou entrar (91 kB, 25 kB com gzip); o padrão é `p2p`, e `?rede=abas` continua para desenvolver. Na tela, o host vê "Abrindo a sala…" e depois o link; o convidado vê "Conectando ao host…", "Conectado. Recebendo o jogo… N%" e, se der errado, "Não foi possível conectar: …" ou "A conexão acabou: …". **Segurança, achado aqui:** dá para adivinhar os ids reais pelos dados (`prototipo-1`), e o convidado podia tirar do baralho a carta que quisesse. Agora o host recusa ("peça desconhecida") o comando que cita uma peça que o assento não vê, e as recusas voltam com apelidos no lugar dos ids. A seção 13 do FormatoBqgame ganhou "Partida em rede". Testes locais (Playwright, PeerJS e WebRTC de verdade, as duas abas na mesma máquina): no Chrome, o roteiro da 3.3 passou inteiro no `pnpm dev` e no build servido pelo `wrangler dev`, com o console limpo, e um pacote de 31 MB chegou em 12 s. O Firefox do Playwright não junta candidatos ICE nem com duas `RTCPeerConnection` na mesma página (limite do ambiente). Nele, a falha aparece na tela com a mensagem certa. **Falta (usuário):** commit e push (o Worker publica sozinho). Depois, o aceite na URL publicada: dois aparelhos em redes diferentes (Wi-Fi e 4G), de preferência com Firefox ou Safari num deles, anotando aqui as combinações que conectaram.
 
 ### Complementos (cada um vira tarefa quando chegar a vez)
 
