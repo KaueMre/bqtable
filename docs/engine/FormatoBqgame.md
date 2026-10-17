@@ -37,7 +37,7 @@ O site baixa o pacote de outro endereço, e o iframe do jogo baixa dali os dados
 | Onde | Abre por link? | Observação |
 |---|---|---|
 | `raw.githubusercontent.com` (o arquivo no repositório) | Sim | Só repositório público. Cache de 5 minutos: uma mudança demora a aparecer. |
-| GitHub Pages (`<dono>.github.io/<repo>/`) | Sim | Arquivo de até 100 MB. Bom para o `.bqgame` gerado por um workflow. |
+| GitHub Pages (`<dono>.github.io/<repo>/`) | Sim | Arquivo de até 100 MB. Bom para o `.bqgame` gerado por um workflow (modelo em `SDK.md`, "Publicar no GitHub Pages"). |
 | jsDelivr (`cdn.jsdelivr.net/gh/<dono>/<repo>@<ref>/<caminho>`) | Sim | Até ~20 MB por arquivo. |
 | GitHub Releases (download) | Não | O download redireciona para um endereço sem CORS. A página explica e não tenta baixar. |
 | Repositório privado | Não | O raw exige token. Mande o arquivo (**Escolher arquivo**). |

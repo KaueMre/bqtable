@@ -121,6 +121,84 @@ it('setup', async () => {
 
 Comandos: `pnpm test`, `pnpm typecheck`, `pnpm empacotar`. O `.bqgame` gerado abre na página **Jogar** do bqtable (**Escolher arquivo**).
 
+## Publicar no GitHub Pages
+
+A cada push na `main`, um workflow do GitHub Actions testa, empacota e publica o `.bqgame` no GitHub Pages do repositório. O GitHub Pages manda o cabeçalho de CORS, então o jogo abre por link (`<id>` é o `id` do `manifest.json`):
+
+```
+https://bqtable.kauefar.workers.dev/jogar?url=https://<dono>.github.io/<repo>/<id>.bqgame
+```
+
+1. No repositório: **Settings → Pages → Source: GitHub Actions**.
+2. Crie `.github/workflows/publicar.yml`:
+
+```yaml
+# Testa, empacota e publica o .bqgame no GitHub Pages deste repositório, a cada push na main.
+# Antes da primeira vez: Settings → Pages → Source: GitHub Actions.
+name: Publicar o jogo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# uma publicação por vez (a que já começou termina)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  BQTABLE: https://bqtable.kauefar.workers.dev
+
+jobs:
+  empacotar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - name: Empacotar
+        run: |
+          id=$(node -p "require('./jogo/manifest.json').id")
+          mkdir -p _site
+          pnpm exec bqgame-pack jogo "_site/$id.bqgame"
+          dono=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          pacote="https://$dono.github.io/${GITHUB_REPOSITORY#*/}/$id.bqgame"
+          echo "Jogar: $BQTABLE/jogar?url=$pacote" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  publicar:
+    needs: empacotar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+```
+
+3. Faça commit do `pnpm-lock.yaml` e dê push na `main`. O link para jogar aparece no resumo da execução, na aba **Actions**.
+
+- O site do GitHub Pages é sempre público, mesmo quando o repositório é privado (e Pages em repositório privado exige plano pago do GitHub). Jogo que não pode ficar público, como o Eternal Decks, não usa este workflow e abre por **Escolher arquivo**.
+- O CI usa o mesmo `pnpm-workspace.yaml`: sem a linha do bqtable no `allowBuilds`, o install falha lá também.
+- O workflow chama o `bqgame-pack` direto, com o nome `<id>.bqgame` dentro de `_site/`, e não o `pnpm empacotar`. O GitHub Pages aceita arquivos de até 100 MB.
+
 ## Para quem mexe no bqtable
 
 - As entradas ficam em `src/sdk/` (`index.ts` e `testing.ts`). O lint impede que elas importem React ou a tela.
