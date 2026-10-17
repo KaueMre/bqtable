@@ -1,0 +1,652 @@
+.bq-game {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 560px;
+}
+
+.bq-game-table {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bq-game-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 320px;
+  flex: none;
+  overflow: auto;
+}
+
+.bq-game-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.bq-game-message {
+  min-height: 1.2em;
+  margin: 0;
+  color: #cf222e;
+  font-size: 13px;
+}
+
+.bq-game-hint {
+  margin: 0;
+  color: #656d76;
+  font-size: 13px;
+}
+
+.bq-game-hud,
+.bq-game-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.bq-game-hud div,
+.bq-game-details div {
+  display: contents;
+}
+
+.bq-game-hud dt,
+.bq-game-details dt {
+  color: #656d76;
+}
+
+.bq-game-hud dd,
+.bq-game-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line; /* listas: um item por linha */
+}
+
+.bq-players {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.bq-players ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bq-player {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.bq-player--active {
+  background: #ddf4ff;
+  outline: 1px solid #54aeff;
+}
+
+.bq-player-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.bq-player-turn,
+.bq-player-you {
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.bq-player-turn {
+  background: #0969da;
+  color: #fff;
+}
+
+.bq-player-you {
+  background: #eaeef2;
+  color: #57606a;
+}
+
+.bq-player-resources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  width: 100%;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.bq-player-resources div {
+  display: flex;
+  gap: 4px;
+}
+
+.bq-player-resources dt {
+  color: #656d76;
+}
+
+.bq-player-resources dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.bq-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 2px solid #d4a72c;
+  border-radius: 6px;
+  background: #fff8c5;
+  font-size: 13px;
+}
+
+.bq-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bq-end {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  min-width: 280px;
+  padding: 24px 32px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.95);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.35);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.bq-end h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.bq-end p {
+  margin: 0;
+}
+
+.bq-end--win h2 {
+  color: #1a7f37;
+}
+
+.bq-end--lose h2 {
+  color: #cf222e;
+}
+
+.bq-end-score {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.bq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+/* --- tela cheia: a mesa ocupa tudo; os painéis flutuam por cima --- */
+
+.bq-game--full {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  min-height: 0;
+  height: 100%;
+  gap: 0;
+  background: #1f2328;
+}
+
+.bq-game--full .bq-game-table {
+  border-radius: 0;
+}
+
+/* a camada dos painéis não pega o mouse; só os painéis */
+.bq-fs,
+.bq-fs-left,
+.bq-fs-right {
+  pointer-events: none;
+}
+
+.bq-fs {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  font-size: 13px;
+}
+
+.bq-fs-left,
+.bq-fs-right {
+  position: absolute;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* a coluna da esquerda rola; embaixo dela ficam os controles de zoom */
+.bq-fs-left {
+  left: 8px;
+  width: 300px;
+  max-height: calc(100% - 56px);
+  overflow: auto;
+}
+
+/* a da direita não corta nada (o menu da HUD abre para fora dela) */
+
+.bq-fs-right {
+  right: 8px;
+  align-items: flex-end;
+  max-width: 360px;
+}
+
+.bq-fs-left > *,
+.bq-fs-right > *,
+.bq-fs-choice,
+.bq-fs-log {
+  pointer-events: auto;
+}
+
+.bq-fs-choice {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: min(420px, 40%);
+  transform: translateX(-50%);
+}
+
+.bq-fs-log {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 360px;
+}
+
+.bq-fs-log .event-log {
+  max-height: 30vh;
+}
+
+.bq-game--full .bq-players,
+.bq-game--full .bq-game-hud,
+.bq-game--full .bq-game-details,
+.bq-game--full .bq-actions,
+.bq-game--full .bq-choice,
+.bq-game--full .bq-log {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.3);
+}
+
+.bq-game--full .bq-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.bq-game--full .bq-game-message {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.bq-game--full .bq-game-message:empty {
+  display: none;
+}
+
+/* --- barra de botões (ícones) --- */
+
+.bq-fs-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.3);
+}
+
+.bq-icon-button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #f6f8fa;
+  color: #1f2328;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bq-icon-button:hover:not(:disabled) {
+  background: #eaeef2;
+}
+
+.bq-icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* --- menu da HUD: abre com o mouse em cima --- */
+
+.bq-hud-menu {
+  position: relative;
+}
+
+.bq-hud-menu-list {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 3;
+  min-width: 240px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+}
+
+.bq-hud-toggles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bq-hud-menu-list button,
+.bq-hud-toggles button {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bq-hud-menu-list button:hover,
+.bq-hud-toggles button:hover {
+  background: #f6f8fa;
+}
+
+.bq-hud-mode {
+  color: #1a7f37;
+  font-size: 12px;
+}
+
+.bq-hud-mode--hidden {
+  color: #8c959f;
+}
+
+.bq-hud-menu kbd,
+.bq-modal kbd {
+  padding: 1px 5px;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+  background: #f6f8fa;
+  font:
+    11px ui-monospace,
+    monospace;
+}
+
+/* --- popup de configurações --- */
+
+.bq-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.bq-modal-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(520px, 90vw);
+  max-height: 80vh;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.4);
+  font-size: 13px;
+}
+
+.bq-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bq-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.bq-tabs button {
+  padding: 6px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bq-tabs button[aria-selected='true'] {
+  border-bottom-color: #0969da;
+  font-weight: 600;
+}
+
+/* --- atalhos (aba Atalhos das configurações) --- */
+
+.bq-keys-tools {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.bq-keys-tools input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.bq-keys-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bq-keys-table th {
+  padding: 10px 4px 4px;
+  border-bottom: 1px solid #d0d7de;
+  color: #57606a;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.bq-keys-table td {
+  padding: 2px 4px;
+  border-bottom: 1px solid #f0f2f4;
+}
+
+.bq-keys-table td:nth-child(2) {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.bq-key {
+  min-width: 64px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bq-key:hover,
+.bq-key:focus-visible {
+  border-color: #0969da;
+  background: #ddf4ff;
+}
+
+.bq-key-none {
+  color: #8c959f;
+}
+
+.bq-key-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.bq-key-actions button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: #57606a;
+  cursor: pointer;
+}
+
+.bq-key-actions button:hover {
+  background: #f0f2f4;
+  color: #1f2328;
+}
+
+.bq-key-fixed td {
+  color: #57606a;
+}
+
+.bq-capture .bq-modal-box {
+  width: min(380px, 90vw);
+}
+
+.bq-capture-combo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px dashed #d0d7de;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.bq-capture-combo kbd {
+  font-size: 15px;
+}
+
+.bq-capture-problem {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #ffebe9;
+  color: #cf222e;
+}
+
+/* --- descrição e palavras-chave (preview e dica ao lado da peça) --- */
+
+.bq-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+}
+
+.bq-kw-box {
+  padding: 6px 9px;
+  border: 1px solid #6e7681;
+  border-radius: 6px;
+  background: rgb(22 27 34 / 0.95);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.35);
+  color: #e6edf3;
+}
+
+.bq-kw-box > strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #e3b341;
+}
+
+.bq-desc {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.97);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.3);
+  color: #1f2328;
+}
+
+.bq-desc p,
+.bq-kw-box p {
+  margin: 0 0 4px;
+}
+
+.bq-kw {
+  color: #9a6700;
+  font-weight: 600;
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+.bq-kw-box .bq-kw {
+  color: #e3b341;
+}
+
+.bq-kw--unknown {
+  cursor: default;
+  text-decoration: none;
+}
+
+.bq-setting {
+  display: grid;
+  grid-template-columns: 1fr 160px 48px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+}

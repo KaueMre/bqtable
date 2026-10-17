@@ -1,0 +1,58 @@
+[
+  {
+    "id": "rascunho",
+    "nome": "Rascunho",
+    "custo": 0,
+    "pontos": 1,
+    "copias": 4
+  },
+  {
+    "id": "ideia",
+    "nome": "Ideia",
+    "custo": 0,
+    "pontos": 1,
+    "copias": 4
+  },
+  {
+    "id": "esboco",
+    "nome": "Esboço",
+    "custo": 1,
+    "pontos": 2,
+    "copias": 3
+  },
+  {
+    "id": "estudo",
+    "nome": "Estudo",
+    "custo": 1,
+    "pontos": 2,
+    "copias": 3
+  },
+  {
+    "id": "projeto",
+    "nome": "Projeto",
+    "custo": 2,
+    "pontos": 4,
+    "copias": 2
+  },
+  {
+    "id": "prototipo",
+    "nome": "Protótipo",
+    "custo": 2,
+    "pontos": 4,
+    "copias": 2
+  },
+  {
+    "id": "obra",
+    "nome": "Obra",
+    "custo": 3,
+    "pontos": 6,
+    "copias": 1
+  },
+  {
+    "id": "obra-prima",
+    "nome": "Obra-prima",
+    "custo": 3,
+    "pontos": 7,
+    "copias": 1
+  }
+]

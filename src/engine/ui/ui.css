@@ -1,0 +1,42 @@
+.event-log {
+  max-height: 320px;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  list-style: none;
+  border-radius: 6px;
+  background: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.event-log li {
+  white-space: nowrap;
+}
+
+.event-log-seq {
+  display: inline-block;
+  width: 3ch;
+  margin-right: 8px;
+  color: #8c959f;
+  text-align: right;
+}
+
+.event-log-type {
+  font-weight: 600;
+}
+
+.event-log-by {
+  color: #8250df;
+}
+
+.event-log-actor {
+  color: #0969da;
+}
+
+.event-log .event-log-message {
+  padding: 1px 0;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  white-space: normal;
+}

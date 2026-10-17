@@ -1,0 +1,66 @@
+[
+  {
+    "id": "C1",
+    "nome": "Faísca",
+    "elemento": "fogo",
+    "custo": 1,
+    "efeito": "Ganhe 1 de energia.",
+    "copias": 3
+  },
+  {
+    "id": "C2",
+    "nome": "Brasa",
+    "elemento": "fogo",
+    "custo": 2,
+    "efeito": "Compre 1 carta.",
+    "copias": 2
+  },
+  {
+    "id": "C3",
+    "nome": "Incêndio",
+    "elemento": "fogo",
+    "custo": 3,
+    "efeito": "Descarte 2 cartas do oponente.",
+    "copias": 1
+  },
+  {
+    "id": "C4",
+    "nome": "Gota",
+    "elemento": "agua",
+    "custo": 1,
+    "efeito": "Ganhe 1 de energia.",
+    "copias": 3
+  },
+  {
+    "id": "C5",
+    "nome": "Maré",
+    "elemento": "agua",
+    "custo": 2,
+    "efeito": "Devolva uma carta à mão.",
+    "copias": 2
+  },
+  {
+    "id": "C6",
+    "nome": "Tsunami",
+    "elemento": "agua",
+    "custo": 3,
+    "efeito": "Todos descartam a mão.",
+    "copias": 1
+  },
+  {
+    "id": "C7",
+    "nome": "Semente",
+    "elemento": "terra",
+    "custo": 1,
+    "efeito": "Ganhe 1 de energia.",
+    "copias": 3
+  },
+  {
+    "id": "C8",
+    "nome": "Raiz",
+    "elemento": "terra",
+    "custo": 2,
+    "efeito": "Proteja uma carta do Tableau.",
+    "copias": 2
+  }
+]

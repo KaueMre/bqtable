@@ -1,0 +1,379 @@
+{
+  "format": "bqgame/1",
+  "id": "mesa-zonas",
+  "name": "Mesa com zonas",
+  "version": "1.0.0",
+  "author": "bqtable (exemplo)",
+  "description": "Dados e imagens dentro do pacote, Tableau em pirâmide e um tabuleiro por jogador.",
+  "players": {
+    "min": 1,
+    "max": 2
+  },
+  "kinds": [
+    {
+      "kind": "carta",
+      "statuses": ["faceDown", "faceUp"],
+      "attributes": {
+        "type": "object",
+        "properties": {
+          "def": {
+            "type": "string"
+          }
+        },
+        "required": ["def"]
+      },
+      "defaults": {
+        "size": {
+          "w": 80,
+          "h": 112
+        },
+        "faces": {
+          "faceDown": "images/verso.svg"
+        }
+      },
+      "activate": {
+        "cycleStatus": ["faceDown", "faceUp"]
+      },
+      "data": "cartas"
+    },
+    {
+      "kind": "ficha",
+      "defaults": {
+        "size": {
+          "w": 26,
+          "h": 26
+        },
+        "faces": {
+          "default": "template:ficha"
+        }
+      }
+    },
+    {
+      "kind": "zona",
+      "draggable": false
+    },
+    {
+      "kind": "tabuleiro"
+    }
+  ],
+  "data": {
+    "cartas": "data/cartas.json"
+  },
+  "lookups": {
+    "cor": {
+      "fogo": "#e5533d",
+      "agua": "#2f81f7",
+      "terra": "#7d8b32"
+    },
+    "clara": {
+      "fogo": "#fde4df",
+      "agua": "#ddeeff",
+      "terra": "#eef2d8"
+    }
+  },
+  "templates": {
+    "carta": {
+      "size": {
+        "w": 120,
+        "h": 168
+      },
+      "data": "cartas",
+      "elements": [
+        {
+          "type": "rect",
+          "x": 1,
+          "y": 1,
+          "w": 118,
+          "h": 166,
+          "radius": 8,
+          "fill": "#ffffff",
+          "stroke": "{elemento|cor}",
+          "lineWidth": 3
+        },
+        {
+          "type": "rect",
+          "x": 6,
+          "y": 6,
+          "w": 108,
+          "h": 70,
+          "radius": 4,
+          "fill": "{elemento|clara}"
+        },
+        {
+          "type": "image",
+          "src": "images/{elemento}.svg",
+          "x": 40,
+          "y": 24,
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "circle",
+          "x": 104,
+          "y": 16,
+          "r": 10,
+          "fill": "{elemento|cor}"
+        },
+        {
+          "type": "text",
+          "x": 104,
+          "y": 20,
+          "text": "{custo}",
+          "font": "600 12px system-ui",
+          "color": "#ffffff",
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 94,
+          "text": "{nome}",
+          "font": "600 13px system-ui",
+          "align": "center",
+          "maxWidth": 108
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 116,
+          "text": "{efeito}",
+          "font": "10px system-ui",
+          "align": "center",
+          "maxWidth": 100,
+          "maxLines": 3,
+          "lineHeight": 12
+        }
+      ]
+    },
+    "ficha": {
+      "size": {
+        "w": 26,
+        "h": 26
+      },
+      "elements": [
+        {
+          "type": "circle",
+          "x": 13,
+          "y": 13,
+          "r": 12,
+          "fill": "#f0c75e",
+          "stroke": "#7a5b00",
+          "lineWidth": 2
+        }
+      ]
+    }
+  },
+  "prefabs": {
+    "jogador": {
+      "params": {
+        "id": "j",
+        "nome": "Jogador",
+        "x": 300,
+        "y": 300
+      },
+      "pieces": [
+        {
+          "id": "{id}",
+          "kind": "tabuleiro",
+          "faces": {
+            "default": "Tabuleiro de {nome}"
+          },
+          "size": {
+            "w": 560,
+            "h": 430
+          },
+          "transform": {
+            "x": "{x}",
+            "y": "{y}",
+            "scale": 0.8
+          },
+          "zone": {
+            "layout": "free",
+            "accepts": {
+              "kinds": ["carta", "zona", "ficha"]
+            }
+          }
+        },
+        {
+          "id": "{id}-tableau",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Tableau"
+          },
+          "transform": {
+            "x": 200,
+            "y": 150
+          },
+          "zone": {
+            "layout": "slots",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceUp",
+            "slots": {
+              "pattern": "pyramid",
+              "base": 3,
+              "rows": 2,
+              "slot": {
+                "w": 80,
+                "h": 112
+              }
+            }
+          }
+        },
+        {
+          "id": "{id}-energia",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Energia"
+          },
+          "size": {
+            "w": 120,
+            "h": 120
+          },
+          "transform": {
+            "x": 470,
+            "y": 110
+          },
+          "zone": {
+            "layout": "grid",
+            "accepts": {
+              "kinds": ["ficha"]
+            },
+            "grid": {
+              "cols": 4,
+              "rows": 4,
+              "cell": {
+                "w": 30,
+                "h": 30
+              }
+            }
+          }
+        },
+        {
+          "id": "{id}-mao",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Mão"
+          },
+          "size": {
+            "w": 520,
+            "h": 130
+          },
+          "transform": {
+            "x": 280,
+            "y": 350
+          },
+          "zone": {
+            "layout": "fan",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceUp",
+            "fan": {
+              "spacing": 55,
+              "arc": 14
+            }
+          }
+        },
+        {
+          "id": "{id}-f1",
+          "kind": "ficha",
+          "parentId": "{id}-energia",
+          "slot": "0,0"
+        },
+        {
+          "id": "{id}-f2",
+          "kind": "ficha",
+          "parentId": "{id}-energia",
+          "slot": "1,0"
+        }
+      ]
+    }
+  },
+  "setup": [
+    {
+      "pieces": [
+        {
+          "id": "baralho",
+          "kind": "zona",
+          "faces": {
+            "default": "Baralho"
+          },
+          "size": {
+            "w": 110,
+            "h": 150
+          },
+          "transform": {
+            "x": 520,
+            "y": 110
+          },
+          "zone": {
+            "layout": "stack",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceDown"
+          }
+        }
+      ]
+    },
+    {
+      "forEach": "cartas",
+      "copies": "{copias}",
+      "piece": {
+        "id": "{id}-{n}",
+        "kind": "carta",
+        "parentId": "baralho",
+        "status": "faceDown",
+        "faces": {
+          "faceUp": "template:carta/{id}"
+        },
+        "attributes": {
+          "def": "{id}"
+        }
+      }
+    },
+    {
+      "command": {
+        "type": "shuffle",
+        "zone": "baralho"
+      }
+    },
+    {
+      "prefab": "jogador",
+      "with": {
+        "id": "ana",
+        "nome": "Ana",
+        "x": 260,
+        "y": 400
+      }
+    },
+    {
+      "prefab": "jogador",
+      "with": {
+        "id": "bia",
+        "nome": "Bia",
+        "x": 760,
+        "y": 400
+      }
+    }
+  ],
+  "hud": [
+    {
+      "label": "Baralho",
+      "count": "baralho"
+    },
+    {
+      "label": "Mão da Ana",
+      "count": "ana-mao"
+    },
+    {
+      "label": "Mão da Bia",
+      "count": "bia-mao"
+    }
+  ]
+}

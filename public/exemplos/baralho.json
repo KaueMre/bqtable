@@ -1,0 +1,532 @@
+{
+  "format": "bqgame/1",
+  "id": "baralho-comum",
+  "name": "Baralho comum",
+  "author": "bqtable (exemplo)",
+  "description": "52 cartas sem nenhuma imagem: faces desenhadas por modelo.",
+  "table": {
+    "background": "#1f6f4a"
+  },
+  "kinds": [
+    {
+      "kind": "carta",
+      "statuses": ["faceDown", "faceUp"],
+      "attributes": {
+        "type": "object",
+        "properties": {
+          "def": {
+            "type": "string"
+          }
+        },
+        "required": ["def"]
+      },
+      "defaults": {
+        "size": {
+          "w": 90,
+          "h": 126
+        },
+        "faces": {
+          "faceDown": "template:verso"
+        }
+      },
+      "activate": {
+        "cycleStatus": ["faceDown", "faceUp"]
+      },
+      "data": "cartas"
+    },
+    {
+      "kind": "zona",
+      "draggable": false
+    }
+  ],
+  "data": {
+    "cartas": [
+      {
+        "id": "espadas-A",
+        "valor": "A",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-2",
+        "valor": "2",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-3",
+        "valor": "3",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-4",
+        "valor": "4",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-5",
+        "valor": "5",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-6",
+        "valor": "6",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-7",
+        "valor": "7",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-8",
+        "valor": "8",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-9",
+        "valor": "9",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-10",
+        "valor": "10",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-J",
+        "valor": "J",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-Q",
+        "valor": "Q",
+        "naipe": "espadas"
+      },
+      {
+        "id": "espadas-K",
+        "valor": "K",
+        "naipe": "espadas"
+      },
+      {
+        "id": "copas-A",
+        "valor": "A",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-2",
+        "valor": "2",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-3",
+        "valor": "3",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-4",
+        "valor": "4",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-5",
+        "valor": "5",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-6",
+        "valor": "6",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-7",
+        "valor": "7",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-8",
+        "valor": "8",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-9",
+        "valor": "9",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-10",
+        "valor": "10",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-J",
+        "valor": "J",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-Q",
+        "valor": "Q",
+        "naipe": "copas"
+      },
+      {
+        "id": "copas-K",
+        "valor": "K",
+        "naipe": "copas"
+      },
+      {
+        "id": "ouros-A",
+        "valor": "A",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-2",
+        "valor": "2",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-3",
+        "valor": "3",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-4",
+        "valor": "4",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-5",
+        "valor": "5",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-6",
+        "valor": "6",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-7",
+        "valor": "7",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-8",
+        "valor": "8",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-9",
+        "valor": "9",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-10",
+        "valor": "10",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-J",
+        "valor": "J",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-Q",
+        "valor": "Q",
+        "naipe": "ouros"
+      },
+      {
+        "id": "ouros-K",
+        "valor": "K",
+        "naipe": "ouros"
+      },
+      {
+        "id": "paus-A",
+        "valor": "A",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-2",
+        "valor": "2",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-3",
+        "valor": "3",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-4",
+        "valor": "4",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-5",
+        "valor": "5",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-6",
+        "valor": "6",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-7",
+        "valor": "7",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-8",
+        "valor": "8",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-9",
+        "valor": "9",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-10",
+        "valor": "10",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-J",
+        "valor": "J",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-Q",
+        "valor": "Q",
+        "naipe": "paus"
+      },
+      {
+        "id": "paus-K",
+        "valor": "K",
+        "naipe": "paus"
+      }
+    ]
+  },
+  "lookups": {
+    "simbolo": {
+      "espadas": "♠",
+      "copas": "♥",
+      "ouros": "♦",
+      "paus": "♣"
+    },
+    "cor": {
+      "espadas": "#1f2328",
+      "paus": "#1f2328",
+      "copas": "#cf222e",
+      "ouros": "#cf222e"
+    }
+  },
+  "templates": {
+    "carta": {
+      "size": {
+        "w": 120,
+        "h": 168
+      },
+      "data": "cartas",
+      "elements": [
+        {
+          "type": "rect",
+          "x": 1,
+          "y": 1,
+          "w": 118,
+          "h": 166,
+          "radius": 8,
+          "fill": "#ffffff",
+          "stroke": "#57606a",
+          "lineWidth": 1.5
+        },
+        {
+          "type": "text",
+          "x": 10,
+          "y": 24,
+          "text": "{valor}",
+          "font": "600 18px system-ui",
+          "color": "{naipe|cor}"
+        },
+        {
+          "type": "text",
+          "x": 10,
+          "y": 42,
+          "text": "{naipe|simbolo}",
+          "font": "16px system-ui",
+          "color": "{naipe|cor}"
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 104,
+          "text": "{naipe|simbolo}",
+          "font": "54px system-ui",
+          "color": "{naipe|cor}",
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "x": 110,
+          "y": 156,
+          "text": "{valor}",
+          "font": "600 18px system-ui",
+          "color": "{naipe|cor}",
+          "align": "right"
+        }
+      ]
+    },
+    "verso": {
+      "size": {
+        "w": 120,
+        "h": 168
+      },
+      "elements": [
+        {
+          "type": "rect",
+          "x": 1,
+          "y": 1,
+          "w": 118,
+          "h": 166,
+          "radius": 8,
+          "fill": "#0969da"
+        },
+        {
+          "type": "rect",
+          "x": 9,
+          "y": 9,
+          "w": 102,
+          "h": 150,
+          "radius": 5,
+          "stroke": "#ffffff",
+          "lineWidth": 2,
+          "dash": [6, 4]
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 90,
+          "text": "bqtable",
+          "font": "600 16px system-ui",
+          "color": "#ffffff",
+          "align": "center"
+        }
+      ]
+    }
+  },
+  "setup": [
+    {
+      "pieces": [
+        {
+          "id": "monte",
+          "kind": "zona",
+          "faces": {
+            "default": "Monte"
+          },
+          "size": {
+            "w": 120,
+            "h": 160
+          },
+          "transform": {
+            "x": 110,
+            "y": 130
+          },
+          "zone": {
+            "layout": "stack",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceDown",
+            "stack": {
+              "dx": 0.2,
+              "dy": -0.3
+            }
+          }
+        },
+        {
+          "id": "descarte",
+          "kind": "zona",
+          "faces": {
+            "default": "Descarte"
+          },
+          "size": {
+            "w": 120,
+            "h": 160
+          },
+          "transform": {
+            "x": 270,
+            "y": 130
+          },
+          "zone": {
+            "layout": "stack",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceUp",
+            "stack": {
+              "dx": 0.2,
+              "dy": -0.3
+            }
+          }
+        },
+        {
+          "id": "mao",
+          "kind": "zona",
+          "faces": {
+            "default": "Mão"
+          },
+          "size": {
+            "w": 640,
+            "h": 180
+          },
+          "transform": {
+            "x": 400,
+            "y": 470
+          },
+          "zone": {
+            "layout": "fan",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceUp",
+            "fan": {
+              "spacing": 60,
+              "arc": 18
+            }
+          }
+        }
+      ]
+    },
+    {
+      "forEach": "cartas",
+      "piece": {
+        "id": "{id}",
+        "kind": "carta",
+        "parentId": "monte",
+        "status": "faceDown",
+        "faces": {
+          "faceUp": "template:carta/{id}"
+        },
+        "attributes": {
+          "def": "{id}"
+        }
+      }
+    },
+    {
+      "command": {
+        "type": "shuffle",
+        "zone": "monte"
+      }
+    }
+  ],
+  "hud": [
+    {
+      "label": "Monte",
+      "count": "monte"
+    },
+    {
+      "label": "Mão",
+      "count": "mao"
+    },
+    {
+      "label": "Descarte",
+      "count": "descarte"
+    }
+  ]
+}

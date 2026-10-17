@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+*.local
+*.tsbuildinfo
+.DS_Store
+docs/games/eternal_decks/imgs
+docs/games/eternal_decks/imgs2
+# Eternal Decks: arte da editora (gerada pelo scripts/eternal-decks-imagens.mjs) e o pacote montado
+games
+games/eternal-decks/images
+games/eternal-decks.bqgame

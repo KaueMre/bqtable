@@ -1,0 +1,61 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1f2328;
+  background: #f6f8fa;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.frame-header {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.frame-header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.frame-header p {
+  margin: 0;
+  color: #656d76;
+}
+
+.frame-game {
+  flex: 1;
+  min-height: 0;
+}
+
+.frame-wait,
+.frame-error {
+  margin: 12px;
+  padding: 24px;
+  border: 1px dashed #d0d7de;
+  border-radius: 6px;
+  color: #656d76;
+}
+
+.frame-error {
+  border-color: #cf222e;
+  color: #1f2328;
+}
+
+.frame-error pre {
+  white-space: pre-wrap;
+  font-size: 12px;
+}

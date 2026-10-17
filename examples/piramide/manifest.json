@@ -1,0 +1,476 @@
+{
+  "format": "bqgame/1",
+  "id": "piramide",
+  "name": "Pirâmide de energia",
+  "version": "1.0.0",
+  "author": "bqtable (exemplo)",
+  "description": "Exemplo com regras e jogadores: apoios, energia em fila, pontos, mão virada para os outros, reserva escondida e seleção de várias peças (Shift + clique).",
+  "players": {
+    "min": 1,
+    "max": 2,
+    "seats": {
+      "1": [
+        {
+          "x": 300,
+          "y": 470
+        }
+      ],
+      "2": [
+        {
+          "x": 300,
+          "y": 470
+        },
+        {
+          "x": 820,
+          "y": 470
+        }
+      ]
+    }
+  },
+  "rules": "regras/index.ts",
+  "kinds": [
+    {
+      "kind": "carta",
+      "statuses": ["faceDown", "faceUp"],
+      "attributes": {
+        "type": "object",
+        "properties": {
+          "def": {
+            "type": "string"
+          }
+        },
+        "required": ["def"]
+      },
+      "defaults": {
+        "size": {
+          "w": 80,
+          "h": 112
+        },
+        "faces": {
+          "faceDown": "images/verso.svg"
+        }
+      },
+      "data": "cartas",
+      "description": "<b>{nome}</b><br>Custa {custo} de [[energia]] e vale {pontos} [[ponto|pontos]].<br>No Tableau, precisa de [[apoio]]."
+    },
+    {
+      "kind": "ficha",
+      "defaults": {
+        "size": {
+          "w": 24,
+          "h": 24
+        },
+        "faces": {
+          "default": "template:ficha"
+        }
+      }
+    },
+    {
+      "kind": "zona",
+      "draggable": false
+    },
+    {
+      "kind": "tabuleiro"
+    }
+  ],
+  "data": {
+    "cartas": "data/cartas.json",
+    "banco": [
+      {
+        "id": "energia",
+        "copias": 30
+      }
+    ]
+  },
+  "templates": {
+    "carta": {
+      "size": {
+        "w": 120,
+        "h": 168
+      },
+      "data": "cartas",
+      "elements": [
+        {
+          "type": "rect",
+          "x": 1,
+          "y": 1,
+          "w": 118,
+          "h": 166,
+          "radius": 8,
+          "fill": "#ffffff",
+          "stroke": "#3d2c8d",
+          "lineWidth": 3
+        },
+        {
+          "type": "circle",
+          "x": 18,
+          "y": 18,
+          "r": 12,
+          "fill": "#f0c75e",
+          "stroke": "#7a5b00"
+        },
+        {
+          "type": "text",
+          "x": 18,
+          "y": 23,
+          "text": "{custo}",
+          "font": "600 14px system-ui",
+          "align": "center"
+        },
+        {
+          "type": "text",
+          "x": 108,
+          "y": 24,
+          "text": "★{pontos}",
+          "font": "600 14px system-ui",
+          "color": "#3d2c8d",
+          "align": "right"
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 92,
+          "text": "{nome}",
+          "font": "600 15px system-ui",
+          "align": "center",
+          "maxWidth": 108
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 140,
+          "text": "custa {custo} · vale {pontos}",
+          "font": "10px system-ui",
+          "color": "#57606a",
+          "align": "center"
+        }
+      ]
+    },
+    "ficha": {
+      "size": {
+        "w": 24,
+        "h": 24
+      },
+      "elements": [
+        {
+          "type": "circle",
+          "x": 12,
+          "y": 12,
+          "r": 11,
+          "fill": "#f0c75e",
+          "stroke": "#7a5b00",
+          "lineWidth": 2
+        }
+      ]
+    }
+  },
+  "prefabs": {
+    "jogador": {
+      "params": {
+        "id": "p1",
+        "nome": "Jogador",
+        "x": 300,
+        "y": 300
+      },
+      "pieces": [
+        {
+          "id": "{id}",
+          "kind": "tabuleiro",
+          "faces": {
+            "default": "{nome}"
+          },
+          "size": {
+            "w": 600,
+            "h": 420
+          },
+          "transform": {
+            "x": "{x}",
+            "y": "{y}",
+            "scale": 0.8
+          },
+          "zone": {
+            "layout": "free",
+            "accepts": {
+              "kinds": ["carta", "zona", "ficha"]
+            }
+          },
+          "owner": "{id}"
+        },
+        {
+          "id": "{id}-tableau",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Tableau"
+          },
+          "transform": {
+            "x": 226,
+            "y": 140
+          },
+          "zone": {
+            "layout": "slots",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceUp",
+            "slots": {
+              "pattern": "pyramid",
+              "base": 3,
+              "rows": 3,
+              "slot": {
+                "w": 80,
+                "h": 112
+              }
+            }
+          }
+        },
+        {
+          "id": "{id}-energia",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Energia"
+          },
+          "size": {
+            "w": 150,
+            "h": 60
+          },
+          "transform": {
+            "x": 520,
+            "y": 60
+          },
+          "zone": {
+            "layout": "row",
+            "accepts": {
+              "kinds": ["ficha"]
+            },
+            "row": {
+              "gap": 4
+            }
+          }
+        },
+        {
+          "id": "{id}-reserva",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Reserva (escondida)"
+          },
+          "size": {
+            "w": 100,
+            "h": 130
+          },
+          "transform": {
+            "x": 520,
+            "y": 185
+          },
+          "zone": {
+            "layout": "stack",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "privacy": "hidden",
+            "stack": {
+              "dx": 0.5,
+              "dy": -0.5
+            }
+          }
+        },
+        {
+          "id": "{id}-mao",
+          "kind": "zona",
+          "parentId": "{id}",
+          "faces": {
+            "default": "Mão (duplo clique compra)"
+          },
+          "size": {
+            "w": 560,
+            "h": 120
+          },
+          "transform": {
+            "x": 300,
+            "y": 345
+          },
+          "zone": {
+            "layout": "fan",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceUp",
+            "fan": {
+              "spacing": 60,
+              "arc": 12
+            },
+            "privacy": "faceDown",
+            "hand": true
+          }
+        }
+      ]
+    }
+  },
+  "setup": [
+    {
+      "pieces": [
+        {
+          "id": "baralho",
+          "kind": "zona",
+          "faces": {
+            "default": "Baralho"
+          },
+          "size": {
+            "w": 110,
+            "h": 150
+          },
+          "transform": {
+            "x": 300,
+            "y": 105
+          },
+          "zone": {
+            "layout": "stack",
+            "accepts": {
+              "kinds": ["carta"]
+            },
+            "statusOnEnter": "faceDown",
+            "stack": {
+              "dx": 0.3,
+              "dy": -0.4
+            },
+            "rotationOnEnter": 0
+          }
+        },
+        {
+          "id": "banco",
+          "kind": "zona",
+          "faces": {
+            "default": "Banco de energia"
+          },
+          "size": {
+            "w": 110,
+            "h": 110
+          },
+          "transform": {
+            "x": 470,
+            "y": 105
+          },
+          "zone": {
+            "layout": "stack",
+            "accepts": {
+              "kinds": ["ficha"]
+            },
+            "stack": {
+              "dx": 0.6,
+              "dy": -0.6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "forEach": "cartas",
+      "copies": "{copias}",
+      "piece": {
+        "id": "{id}-{n}",
+        "kind": "carta",
+        "parentId": "baralho",
+        "status": "faceDown",
+        "faces": {
+          "faceUp": "template:carta/{id}"
+        },
+        "attributes": {
+          "def": "{id}"
+        }
+      }
+    },
+    {
+      "forEach": "banco",
+      "copies": "{copias}",
+      "piece": {
+        "id": "ficha-{n}",
+        "kind": "ficha",
+        "parentId": "banco"
+      }
+    },
+    {
+      "command": {
+        "type": "shuffle",
+        "zone": "baralho"
+      }
+    },
+    {
+      "forEachPlayer": true,
+      "prefab": "jogador",
+      "with": {
+        "id": "{player}",
+        "nome": "{playerName}",
+        "x": "{seat.x}",
+        "y": "{seat.y}"
+      }
+    },
+    {
+      "forEachPlayer": true,
+      "command": {
+        "type": "setGlobal",
+        "key": "pontos-{player}",
+        "value": 0
+      }
+    },
+    {
+      "forEachPlayer": true,
+      "deal": {
+        "from": "banco",
+        "to": "{player}-energia",
+        "count": 3
+      }
+    },
+    {
+      "forEachPlayer": true,
+      "deal": {
+        "from": "baralho",
+        "to": "{player}-mao",
+        "count": 3
+      }
+    }
+  ],
+  "hud": [
+    {
+      "label": "Baralho",
+      "count": "baralho"
+    },
+    {
+      "label": "Banco de energia",
+      "count": "banco"
+    }
+  ],
+  "playerHud": [
+    {
+      "label": "Energia",
+      "count": "{player}-energia"
+    },
+    {
+      "label": "Mão",
+      "count": "{player}-mao"
+    },
+    {
+      "label": "Reserva",
+      "count": "{player}-reserva"
+    },
+    {
+      "label": "Pontos",
+      "global": "pontos-{player}"
+    }
+  ],
+  "keywords": {
+    "energia": {
+      "title": "Energia",
+      "text": "Fichas na fila do seu tabuleiro. Jogar uma carta gasta as fichas do custo, que voltam ao <b>banco</b>."
+    },
+    "ponto": {
+      "title": "Pontos",
+      "text": "Somam no placar de quem jogou a carta."
+    },
+    "apoio": {
+      "title": "Apoio",
+      "text": "Da segunda fileira em diante, a carta precisa das cartas de cima: <b>uma</b> na ponta, <b>duas</b> no meio. Quem joga ainda paga a [[energia]] dela."
+    }
+  }
+}
