@@ -1,0 +1,74 @@
+{
+  "cartas": [
+    {
+      "id": "O1",
+      "nome": "Moeda",
+      "naipe": "Ouros",
+      "valor": 1,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    {
+      "id": "O2",
+      "nome": "Bolsa",
+      "naipe": "Ouros",
+      "valor": 2,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    {
+      "id": "O3",
+      "nome": "Tesouro",
+      "naipe": "Ouros",
+      "valor": 3,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    {
+      "id": "C1",
+      "nome": "Cálice",
+      "naipe": "Copas",
+      "valor": 1,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    { "id": "C2", "nome": "Taça", "naipe": "Copas", "valor": 2, "copias": 2, "extraPorJogador": 1 },
+    {
+      "id": "C3",
+      "nome": "Fonte",
+      "naipe": "Copas",
+      "valor": 3,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    {
+      "id": "E1",
+      "nome": "Adaga",
+      "naipe": "Espadas",
+      "valor": 1,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    {
+      "id": "E2",
+      "nome": "Lança",
+      "naipe": "Espadas",
+      "valor": 2,
+      "copias": 2,
+      "extraPorJogador": 1
+    },
+    {
+      "id": "E3",
+      "nome": "Espada",
+      "naipe": "Espadas",
+      "valor": 3,
+      "copias": 2,
+      "extraPorJogador": 1
+    }
+  ],
+  "mestres": [
+    { "id": "MO", "nome": "Mestre de Ouros", "naipe": "Ouros", "pontos": 3 },
+    { "id": "MC", "nome": "Mestre de Copas", "naipe": "Copas", "pontos": 4 },
+    { "id": "ME", "nome": "Mestre de Espadas", "naipe": "Espadas", "pontos": 5 }
+  ]
+}

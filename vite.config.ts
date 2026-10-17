@@ -48,11 +48,17 @@ export default defineConfig({
   },
   server: {
     // o iframe do jogo tem origem opaca ("null"): sem CORS ele não carrega os módulos do dev server.
-    // Em produção, sirva /assets com Access-Control-Allow-Origin, ou o frame num domínio próprio.
+    // Em produção, /assets vai com Access-Control-Allow-Origin (public/_headers, do Cloudflare Pages).
     cors: true,
   },
   test: {
-    // *.test.ts roda em Node puro (core, regras, e as regras dos jogos em examples/ e games/);
+    // os exemplos importam do motor como um repositório de jogo (docs/engine/SDK.md), mas aqui
+    // direto do fonte, sem precisar do build da SDK
+    alias: {
+      'bqtable/sdk': root('./src/sdk/index.ts'),
+      'bqtable/testing': root('./src/sdk/testing.ts'),
+    },
+    // *.test.ts roda em Node puro (core, regras, e as regras dos exemplos em examples/);
     // *.test.tsx roda com DOM (componentes).
     projects: [
       {
@@ -60,7 +66,7 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: ['src/**/*.test.ts', 'examples/**/*.test.ts', 'games/**/*.test.ts'],
+          include: ['src/**/*.test.ts', 'examples/**/*.test.ts'],
         },
       },
       {

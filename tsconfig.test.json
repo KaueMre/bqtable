@@ -2,8 +2,13 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "bqtable/sdk": ["./src/sdk/index.ts"],
+      "bqtable/testing": ["./src/sdk/testing.ts"]
+    }
   },
-  "include": ["src", "examples", "games"],
+  "include": ["src", "examples"],
   "exclude": []
 }

@@ -1,8 +1,7 @@
 // Pirâmide de energia: regras automáticas (exemplo do formato bqgame/1, em TypeScript).
 // O `pnpm exemplos` junta esta pasta num regras.js (esbuild); o jogo roda o arquivo como o corpo de
 // uma função que recebe `game` (docs/engine/FormatoBqgame.md, seções 12 e 16).
-import type { Command } from '@/engine/core';
-import type { GameApi } from '@/engine/package';
+import type { Command, GameApi } from 'bqtable/sdk';
 import { apoios, ehTableau, tabuleiroDe, type Carta } from './tableau';
 
 declare const game: GameApi;

@@ -11,9 +11,30 @@ export class HttpError extends Error {
   }
 }
 
-/** `fetch` que lança `HttpError` quando a resposta não é 2xx. */
+/**
+ * O `fetch` falhou sem resposta: sem rede, endereço que não existe, ou servidor sem CORS (o
+ * navegador só diz "Failed to fetch" e não conta qual). Pode ser passageiro: tenta de novo.
+ */
+export class NetworkError extends Error {
+  name = 'NetworkError';
+  constructor(url: string) {
+    super(
+      `${url}: não deu para baixar. Se o endereço abre no navegador, o servidor não deixa outros ` +
+        'sites lerem o arquivo: ele precisa mandar o cabeçalho Access-Control-Allow-Origin ' +
+        '(o GitHub Pages e o raw.githubusercontent.com mandam).',
+    );
+  }
+}
+
+/** `fetch` que lança `HttpError` quando a resposta não é 2xx e `NetworkError` sem resposta. */
 export async function fetchOk(url: string, label = url): Promise<Response> {
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    if (e instanceof TypeError) throw new NetworkError(label);
+    throw e;
+  }
   if (!res.ok) throw new HttpError(label, res.status);
   return res;
 }

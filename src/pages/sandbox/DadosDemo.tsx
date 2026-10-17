@@ -1,5 +1,6 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { z } from 'zod';
 import {
   childrenOf,
   createManager,
@@ -7,22 +8,46 @@ import {
   spawn,
   type Manager,
   type Piece,
+  type PieceInit,
 } from '@/engine/core';
-import { DataBoundary, fetchJson, parseOrThrow, preloadImages } from '@/engine/data';
+import { DataBoundary, fetchJson, jsonQuery, parseOrThrow } from '@/engine/data';
 import { ManagerProvider, useGame, usePiece } from '@/engine/react';
 import { defaultGestures, type GestureHandler } from '@/engine/render';
 import { Table } from '@/engine/render/konva';
-import { imagensTatto, registrarArteTatto } from '@/games/tatto/art';
-import { cartasDeBase, deckDoElemento } from '@/games/tatto/data/deck';
-import { definicoesQuery, MINDSET_URL } from '@/games/tatto/data/definitions';
-import {
-  DefinicoesMindset,
-  descreverAcao,
-  ELEMENTOS,
-  type Acao,
-  type Conhecimento,
-} from '@/games/tatto/data/schemas';
-import { CARTA, registrarKinds } from '@/games/tatto/kinds';
+import cartasUrl from './cartas.json?url';
+import { cardFace } from './faces';
+
+const NAIPES = ['Ouros', 'Copas', 'Espadas'] as const;
+const Naipe = z.enum(NAIPES);
+type Naipe = z.infer<typeof Naipe>;
+
+const Carta = z.object({
+  id: z.string().regex(/^[OCE]\d$/, 'id no formato O1, C1, E1'),
+  nome: z.string().min(1),
+  naipe: Naipe,
+  valor: z.number().int().min(1).max(3),
+  /** Cópias com até 2 jogadores, mais `extraPorJogador` para cada jogador além do segundo. */
+  copias: z.number().int().min(0),
+  extraPorJogador: z.number().int().min(0),
+});
+type Carta = z.infer<typeof Carta>;
+
+const Mestre = z.object({
+  id: z.string().regex(/^M[OCE]$/, 'id no formato MO, MC, ME'),
+  nome: z.string().min(1),
+  naipe: Naipe,
+  pontos: z.number().int().min(0),
+});
+
+/** Definições das cartas (cartas.json): na mesa, as peças guardam só o id (`attributes.def`). */
+const Definicoes = z.object({ cartas: z.array(Carta), mestres: z.array(Mestre) });
+type Definicoes = z.infer<typeof Definicoes>;
+
+const CARTA = { w: 90, h: 126 };
+const COR: Record<Naipe, number> = { Ouros: 40, Copas: 0, Espadas: 220 };
+
+const copiasPara = (c: Carta, jogadores: number) =>
+  c.copias + c.extraPorJogador * Math.max(0, jogadores - 2);
 
 type Fonte = 'normal' | 'lenta' | 'quebrada';
 
@@ -30,17 +55,17 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** 'normal' é a query de verdade; as outras simulam rede lenta e um JSON com erros. */
 function queryDaFonte(fonte: Fonte) {
-  if (fonte === 'normal') return definicoesQuery();
+  if (fonte === 'normal') return jsonQuery(['sandbox', 'cartas'], cartasUrl, Definicoes);
   return queryOptions({
-    queryKey: ['tatto', 'mindset', 'demo', fonte] as readonly unknown[],
+    queryKey: ['sandbox', 'cartas', fonte] as readonly unknown[],
     queryFn: async () => {
       await delay(1500);
-      const data = (await fetchJson(MINDSET_URL)) as DefinicoesMindset;
+      const data = (await fetchJson(cartasUrl)) as Definicoes;
       if (fonte === 'quebrada') {
-        (data.mindset[2] as { centro: unknown }).centro = ['VOAR', 1];
-        (data.mindset[5] as { nivel: unknown }).nivel = 7;
+        (data.cartas[2] as { naipe: unknown }).naipe = 'Paus';
+        (data.cartas[5] as { valor: unknown }).valor = 7;
       }
-      return parseOrThrow(DefinicoesMindset, data, 'cartas_mindset.json');
+      return parseOrThrow(Definicoes, data, 'cartas.json');
     },
     staleTime: 0,
     gcTime: 0,
@@ -48,11 +73,42 @@ function queryDaFonte(fonte: Fonte) {
   });
 }
 
-const DECK_X = { Traço: 80, Sombra: 200, Cor: 320 } as const;
+const DECK_X = { Ouros: 80, Copas: 200, Espadas: 320 } as const;
 
-function montarMesa(defs: DefinicoesMindset, jogadores: number): Manager {
+/** Peças do baralho de um naipe, viradas para baixo, com as cópias para o número de jogadores. */
+const baralhoDoNaipe = (defs: Definicoes, naipe: Naipe, jogadores: number): PieceInit[] =>
+  defs.cartas
+    .filter((c) => c.naipe === naipe)
+    .flatMap((c) =>
+      Array.from({ length: copiasPara(c, jogadores) }, (_, i) => ({
+        id: `${c.id}-${i + 1}`,
+        kind: 'carta',
+        status: 'faceDown',
+        parentId: `deck-${naipe}`,
+        faces: {
+          faceUp: cardFace({ label: c.nome, hue: COR[naipe] }),
+          faceDown: cardFace({ label: '', hue: COR[naipe], variant: 'back' }),
+        },
+        tags: [naipe],
+        attributes: { def: c.id },
+      })),
+    );
+
+function montarMesa(defs: Definicoes, jogadores: number): Manager {
   const m = createManager({ seed: Date.now() });
-  registrarKinds(m);
+  const comDefinicao = z.object({ def: z.string() });
+  m.registerKind({
+    kind: 'carta',
+    statuses: ['faceDown', 'faceUp'],
+    attributes: comDefinicao,
+    defaults: { size: CARTA },
+  });
+  m.registerKind({
+    kind: 'mestre',
+    statuses: ['faceUp'],
+    attributes: comDefinicao,
+    defaults: { size: CARTA },
+  });
   m.registerKind({ kind: 'zona' });
   const zona = (
     id: string,
@@ -72,38 +128,46 @@ function montarMesa(defs: DefinicoesMindset, jogadores: number): Manager {
   });
   const r = m.dispatch(
     spawn([
-      ...ELEMENTOS.flatMap((elemento) => [
-        zona(`deck-${elemento}`, `Deck · ${elemento}`, DECK_X[elemento], 110, 110, 150, {
+      ...NAIPES.flatMap((naipe) => [
+        zona(`deck-${naipe}`, `Deck · ${naipe}`, DECK_X[naipe], 110, 110, 150, {
           layout: 'stack',
-          accepts: { tags: [elemento] },
+          accepts: { tags: [naipe] },
           statusOnEnter: 'faceDown',
           stack: { dx: 0.15, dy: -0.25 },
         }),
-        ...deckDoElemento({ defs, elemento, jogadores, parentId: `deck-${elemento}` }),
+        ...baralhoDoNaipe(defs, naipe, jogadores),
       ]),
-      zona('bases', 'Cartas de base', 770, 250, 3 * 100, 3 * 136, {
+      zona('mestres', 'Mestres', 770, 110, 3 * 100, 136, {
         layout: 'grid',
-        accepts: { kinds: ['base-card'] },
-        grid: { cols: 3, rows: 3, cell: { w: 100, h: 136 } },
+        accepts: { kinds: ['mestre'] },
+        grid: { cols: 3, rows: 1, cell: { w: 100, h: 136 } },
       }),
-      ...cartasDeBase({ defs, parentId: 'bases', slot: (i) => gridSlot(Math.floor(i / 3), i % 3) }),
+      ...defs.mestres.map((c, i) => ({
+        id: c.id,
+        kind: 'mestre',
+        status: 'faceUp',
+        parentId: 'mestres',
+        slot: gridSlot(i, 0),
+        faces: { faceUp: cardFace({ label: c.nome, hue: COR[c.naipe] }) },
+        attributes: { def: c.id },
+      })),
       zona('mao', 'Mão', 300, 520, 560, 170, {
         layout: 'fan',
-        accepts: { kinds: ['mindset-card'] },
+        accepts: { kinds: ['carta'] },
         statusOnEnter: 'faceUp',
         fan: { spacing: 70, arc: 14 },
       }),
     ]),
   );
   if (!r.ok) throw new Error(r.error);
-  for (const elemento of ELEMENTOS) m.dispatch({ type: 'shuffle', zone: `deck-${elemento}` });
+  for (const naipe of NAIPES) m.dispatch({ type: 'shuffle', zone: `deck-${naipe}` });
   m.clearHistory();
   return m;
 }
 
 const gestures: GestureHandler = (gesture, piece, state) =>
   gesture.type === 'activate'
-    ? piece.kind === 'mindset-card'
+    ? piece.kind === 'carta'
       ? {
           type: 'setStatus',
           id: piece.id,
@@ -114,18 +178,9 @@ const gestures: GestureHandler = (gesture, piece, state) =>
 
 const canDrag = (p: Piece) => !p.zone;
 
-/** Monta a mesa com as definições carregadas; suspende enquanto busca dados e imagens. */
+/** Monta a mesa com as definições carregadas; suspende enquanto busca os dados. */
 function MesaComDados({ fonte, jogadores }: { fonte: Fonte; jogadores: number }) {
   const { data: defs } = useSuspenseQuery(queryDaFonte(fonte));
-  useSuspenseQuery({
-    queryKey: ['tatto', 'arte', fonte],
-    queryFn: async () => {
-      registrarArteTatto(defs);
-      await preloadImages(imagensTatto(defs));
-      return true;
-    },
-    staleTime: Infinity,
-  });
   const manager = useMemo(() => montarMesa(defs, jogadores), [defs, jogadores]);
   const [selected, setSelected] = useState<string | null>(null);
   return (
@@ -145,62 +200,44 @@ function MesaComDados({ fonte, jogadores }: { fonte: Fonte; jogadores: number })
 
 function Contagem() {
   const counts = useGame((s) =>
-    ELEMENTOS.map((e) => `${e}: ${childrenOf(s.game.pieces, `deck-${e}`).length}`).join(' · '),
+    NAIPES.map((n) => `${n}: ${childrenOf(s.game.pieces, `deck-${n}`).length}`).join(' · '),
   );
   return <p aria-label="Cartas nos decks">{counts}</p>;
 }
 
-const fmtConhecimento = (k: Conhecimento) =>
-  ELEMENTOS.filter((e) => k[e])
-    .map((e) => `${k[e]} ${e}`)
-    .join(', ') || '—';
-const TIPO = { rapida: 'rápida', padrao: 'padrão', epifania: 'epifania', vazio: '' };
-const fmtAcao = (a: Acao) => {
-  const { texto, tipo } = descreverAcao(a);
-  return tipo === 'vazio' ? '(vazia)' : `${texto} · ${TIPO[tipo]}`;
-};
-
 /** Definição da carta selecionada, lida das definições carregadas (não do estado). */
-function Detalhe({ id, defs }: { id: string | null; defs: DefinicoesMindset }) {
+function Detalhe({ id, defs }: { id: string | null; defs: Definicoes }) {
   const piece = usePiece(id ?? '');
   const defId = piece?.attributes.def;
-  const carta = defs.mindset.find((c) => c.id === defId) ?? defs.bases.find((c) => c.id === defId);
+  const carta = defs.cartas.find((c) => c.id === defId) ?? defs.mestres.find((c) => c.id === defId);
   if (!carta) return <p className="demo-hint">Clique numa carta para ver a definição.</p>;
   return (
     <dl className="demo-def" aria-label="Definição da carta">
       <dt>Carta</dt>
       <dd>
-        {carta.nome} ({carta.id}) · {carta.elemento}
+        {carta.nome} ({carta.id}) · {carta.naipe}
       </dd>
-      {'nivel' in carta && (
+      {'valor' in carta && (
         <>
-          <dt>Nível / reputação</dt>
+          <dt>Valor</dt>
+          <dd>{carta.valor}</dd>
+          <dt>Cópias</dt>
           <dd>
-            {carta.nivel} / {carta.reputacao}
-          </dd>
-          <dt>Exige</dt>
-          <dd>{fmtConhecimento(carta.requisito)}</dd>
-        </>
-      )}
-      {'compra' in carta && (
-        <>
-          <dt>Reputação / compra / pré-baixadas</dt>
-          <dd>
-            {carta.reputacao} / {carta.compra} / {carta.pre_baixadas}
+            {carta.copias} + {carta.extraPorJogador} por jogador além do segundo
           </dd>
         </>
       )}
-      <dt>Fornece</dt>
-      <dd>{fmtConhecimento(carta.fornece)}</dd>
-      <dt>Esquerda · centro · direita</dt>
-      <dd>
-        {fmtAcao(carta.esquerda)} | {fmtAcao(carta.centro)} | {fmtAcao(carta.direita)}
-      </dd>
+      {'pontos' in carta && (
+        <>
+          <dt>Pontos</dt>
+          <dd>{carta.pontos}</dd>
+        </>
+      )}
     </dl>
   );
 }
 
-/** Fase 6: definições do JSON via React Query, com carregamento, erro e arte gerada. */
+/** Fase 6: definições do JSON via React Query, com carregamento, erro e faces geradas. */
 export function DadosDemo() {
   const [fonte, setFonte] = useState<Fonte>('normal');
   const [jogadores, setJogadores] = useState(2);
@@ -210,7 +247,7 @@ export function DadosDemo() {
         <label>
           Fonte{' '}
           <select value={fonte} onChange={(e) => setFonte(e.target.value as Fonte)}>
-            <option value="normal">cartas_mindset.json</option>
+            <option value="normal">cartas.json</option>
             <option value="lenta">lenta (1,5 s)</option>
             <option value="quebrada">com erros</option>
           </select>
@@ -232,7 +269,7 @@ export function DadosDemo() {
         <MesaComDados fonte={fonte} jogadores={jogadores} />
       </DataBoundary>
       <p className="demo-hint">
-        Cartas de {CARTA.w}×{CARTA.h}; arte provisória gerada a partir dos dados.
+        Cartas de {CARTA.w}×{CARTA.h}; faces geradas em canvas a partir dos dados.
       </p>
     </>
   );

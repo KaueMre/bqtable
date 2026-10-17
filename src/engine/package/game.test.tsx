@@ -253,6 +253,13 @@ describe('regras.js com erro', () => {
     await expect(comRegras('game.rule({')).rejects.toThrow(/^data:text\/javascript.*: /);
   });
 
+  it('regras em .ts (repositório aberto como pasta) pedem a versão compilada', async () => {
+    const manifest = { ...base, rules: 'regras/index.ts', setup: [] };
+    await expect(loadGame({ manifest })).rejects.toThrow(
+      /^regras\/index\.ts: regras em TypeScript precisam ser compiladas/,
+    );
+  });
+
   it('erro ao rodar as regras aparece ao começar a partida', async () => {
     const game = await comRegras('throw new Error("ops")');
     expect(() => game.createMatch({ players: 1 })).toThrow(/: ops$/);

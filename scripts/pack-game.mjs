@@ -1,12 +1,21 @@
+#!/usr/bin/env node
 // Empacota a pasta de um jogo num .bqgame (zip com manifest.json na raiz).
 // Uso: node scripts/pack-game.mjs <pasta> <saida.bqgame>
+// Num repositório de jogo, o mesmo script é o binário `bqgame-pack` (docs/engine/SDK.md).
 //
 // Regras em TypeScript: se `rules` no manifest aponta para um .ts, o arquivo (e o que ele
 // importa) vira um .js só, com esbuild, e o manifest do pacote passa a apontar para o .js. Os
 // fontes .ts e os testes (*.test.*) não entram no pacote.
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { zipSync } from 'fflate';
 
@@ -76,10 +85,19 @@ export async function packGameZip(dir) {
   return zipSync(await packGame(dir), { level: 9 });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+/** Rodando como comando (não importado). Caminho real: o binário do pnpm chega por um link. */
+function isMain() {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (process.argv[1] && isMain()) {
   const [dir, out] = process.argv.slice(2);
   if (!dir || !out) {
-    console.error('uso: node scripts/pack-game.mjs <pasta> <saida.bqgame>');
+    console.error('uso: bqgame-pack <pasta> <saida.bqgame>');
     process.exit(1);
   }
   try {

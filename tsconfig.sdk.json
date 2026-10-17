@@ -1,0 +1,26 @@
+{
+  // Só os tipos da SDK (scripts/build-sdk.mjs): os .d.ts das entradas e do que elas importam.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "src",
+    "outDir": "dist-sdk/types",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "files": ["src/sdk/index.ts", "src/sdk/testing.ts"]
+}

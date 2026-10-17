@@ -3,9 +3,9 @@ import { createManager, type Manager, type Piece } from '@/engine/core';
 import { ManagerProvider, useDispatch, useGame, useUndo } from '@/engine/react';
 import { defaultGestures, type GestureHandler } from '@/engine/render';
 import { Table } from '@/engine/render/konva';
-import { createTableau } from '@/games/tatto/mindset/tableau';
 import { EventLog } from '@/engine/ui/EventLog';
 import { cardFace } from './faces';
+import { zonaPiramide } from './piramide';
 
 const CARD = { w: 80, h: 112 };
 
@@ -79,7 +79,7 @@ function createZonasManager(): Manager {
     150,
   );
   create(
-    createTableau({
+    zonaPiramide({
       id: 'tableau',
       kind: 'zona',
       x: 410,

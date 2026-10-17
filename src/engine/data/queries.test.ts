@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { DataFormatError, fetchJson, HttpError, jsonQuery, retryNetworkOnly } from './queries';
+import {
+  DataFormatError,
+  fetchJson,
+  fetchOk,
+  HttpError,
+  jsonQuery,
+  NetworkError,
+  retryNetworkOnly,
+} from './queries';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -16,6 +24,19 @@ describe('queries', () => {
   it('fetchJson falha com o status HTTP', async () => {
     stubFetch(404, {});
     await expect(fetchJson('/x.json')).rejects.toThrow('/x.json: HTTP 404');
+  });
+
+  it('fetch sem resposta (CORS, sem rede) vira NetworkError legível, que se repete', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    );
+    const erro = await fetchOk('https://x.com/j.bqgame', 'j.bqgame').catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(NetworkError);
+    expect((erro as Error).message).toMatch(/^j\.bqgame: .*Access-Control-Allow-Origin/);
+    expect(retryNetworkOnly(0, erro as Error)).toBe(true);
   });
 
   it('jsonQuery valida com o schema', async () => {

@@ -52,6 +52,19 @@ describe('regras em vários arquivos e em TypeScript', () => {
     expect(m.getState().globals.x).toBe(42);
   });
 
+  it('loadGameFolder com exclude deixa arquivos de fora (ex.: as imagens)', async () => {
+    const dir = pasta({
+      'manifest.json': { ...manifest([]), rules: undefined },
+      'images/a.png': 'png',
+      'data/b.json': '[]',
+    });
+    const todos = await loadGameFolder(dir);
+    expect(todos.resolveAsset('images/a.png')).toMatch(/^blob:/);
+    const semImagens = await loadGameFolder(dir, { exclude: (p) => p.startsWith('images/') });
+    expect(semImagens.resolveAsset('images/a.png')).toBe('images/a.png');
+    expect(semImagens.resolveAsset('data/b.json')).toMatch(/^blob:/);
+  });
+
   it('erro de compilação aponta o arquivo e a linha', async () => {
     const dir = pasta({
       'manifest.json': manifest('r.ts'),

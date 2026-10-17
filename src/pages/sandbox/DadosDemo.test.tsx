@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { AppProviders } from '@/app/AppProviders';
 import { DadosDemo } from './DadosDemo';
 
-// carrega dados e imagens: sob a suíte inteira, pode passar do 1 s padrão
+// carrega os dados: sob a suíte inteira, pode passar do 1 s padrão
 const decks = () => screen.findByLabelText('Cartas nos decks', {}, { timeout: 4000 });
 
 describe('DadosDemo', () => {
@@ -17,17 +17,17 @@ describe('DadosDemo', () => {
       </AppProviders>,
     );
     expect(screen.getByText('Carregando cartas…')).toBeInTheDocument();
-    expect(await decks()).toHaveTextContent('Traço: 30 · Sombra: 30 · Cor: 30');
+    expect(await decks()).toHaveTextContent('Ouros: 6 · Copas: 6 · Espadas: 6');
 
     await user.selectOptions(screen.getByLabelText('Jogadores'), '4');
-    expect(await decks()).toHaveTextContent('Traço: 48 · Sombra: 48 · Cor: 48');
+    expect(await decks()).toHaveTextContent('Ouros: 12 · Copas: 12 · Espadas: 12');
 
-    // clicar numa base mostra a definição dela
+    // clicar num mestre mostra a definição dele
     const stage = Konva.stages[Konva.stages.length - 1]!;
     act(() => {
-      stage.findOne('#BT6')!.fire('click');
+      stage.findOne('#ME')!.fire('click');
     });
-    expect(screen.getByLabelText('Definição da carta')).toHaveTextContent('Mestre do Traço');
+    expect(screen.getByLabelText('Definição da carta')).toHaveTextContent('Mestre de Espadas');
   });
 
   it('JSON com erro mostra onde está o problema', async () => {
@@ -41,7 +41,7 @@ describe('DadosDemo', () => {
     await user.selectOptions(screen.getByLabelText('Fonte'), 'quebrada');
     expect(screen.getByText('Carregando cartas…')).toBeInTheDocument();
     const alert = await screen.findByRole('alert', {}, { timeout: 4000 });
-    expect(alert).toHaveTextContent('mindset[2].centro');
-    expect(alert).toHaveTextContent('mindset[5].nivel');
+    expect(alert).toHaveTextContent('cartas[2].naipe');
+    expect(alert).toHaveTextContent('cartas[5].valor');
   });
 });

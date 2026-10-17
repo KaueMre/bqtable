@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { childrenOf } from '@/engine/core';
-import { loadGameFolder } from '@/engine/testing';
+import { childrenOf } from 'bqtable/sdk';
+import { loadGameFolder } from 'bqtable/testing';
 import { apoios } from './tableau';
 
 const pasta = fileURLToPath(new URL('..', import.meta.url));

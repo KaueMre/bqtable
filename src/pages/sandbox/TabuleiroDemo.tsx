@@ -11,9 +11,9 @@ import {
 import { ManagerProvider, useDispatch, useGame, useUndo } from '@/engine/react';
 import { defaultGestures, type GestureHandler } from '@/engine/render';
 import { Table } from '@/engine/render/konva';
-import { createTableau } from '@/games/tatto/mindset/tableau';
 import { EventLog } from '@/engine/ui/EventLog';
 import { cardFace } from './faces';
+import { zonaPiramide } from './piramide';
 
 const CARD = { w: 64, h: 90 };
 const FOCO = ['Traço', 'Sombra', 'Cor'];
@@ -43,7 +43,7 @@ const playerBoard: Prefab<{ id: string; name: string; x: number; y: number }> = 
       transform: { x, y, scale: 0.7 },
       zone: { layout: 'free', accepts: { kinds: ['carta', 'parte'] } },
     },
-    createTableau({
+    zonaPiramide({
       id: `${id}-tableau`,
       kind: 'parte',
       parentId: id,

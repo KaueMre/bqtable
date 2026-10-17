@@ -21,7 +21,28 @@ Para gerar o `.bqgame` de uma pasta, use qualquer programa de zip, ou:
 node scripts/pack-game.mjs <pasta-do-jogo> <saida.bqgame>
 ```
 
-Link direto para um jogo: `/jogar?url=<endereço do .bqgame ou .json>`.
+Link direto para um jogo: `/jogar?url=<endereço do .bqgame ou .json>`. No campo de URL e no `?url=`, um link de página do GitHub também serve: `github.com/<dono>/<repo>/blob/<ref>/<caminho>` (ou `/raw/`) vira o arquivo em `raw.githubusercontent.com`, e `/tree/<ref>/<pasta>` abre o `manifest.json` da pasta. Atalho: `/jogar?gh=<dono>/<repo>@<ref>/<caminho>`. Sem `@<ref>`, vale `main`, e a ref não pode ter `/`. Caminho terminado em `/` abre o `manifest.json` da pasta.
+
+### Pasta por URL (sem zip)
+
+Um `manifest.json` aberto por URL acha `data/`, `images/` e o `regras.js` pelo caminho relativo ao endereço dele (seção 2, item 3). Por isso a pasta do jogo num repositório público do GitHub abre sem empacotar: `/jogar?url=https://github.com/<dono>/<repo>/tree/main/<pasta>`. Testado em 17/10/2026, no Chrome e no Firefox, com `examples/mesa-zonas` pelo raw (dados e imagens) e com a pirâmide desempacotada (`regras.js` relativo).
+
+- **As regras precisam estar compiladas.** O navegador não roda TypeScript: um manifest com `"rules": "regras/index.ts"` dá um erro que pede a versão compilada. Ou o repositório guarda o `.js` gerado e aponta `rules` para ele, ou publica o `.bqgame` (seção 16).
+- Cada arquivo é um pedido separado. Com muitas imagens, o `.bqgame` abre mais rápido.
+
+### Onde hospedar um jogo
+
+O site baixa o pacote de outro endereço, e o iframe do jogo baixa dali os dados, as imagens e o `regras.js`. O servidor precisa mandar o cabeçalho `Access-Control-Allow-Origin` (CORS). Sem ele, a página mostra um erro que diz isso. Medido em 16/10/2026:
+
+| Onde | Abre por link? | Observação |
+|---|---|---|
+| `raw.githubusercontent.com` (o arquivo no repositório) | Sim | Só repositório público. Cache de 5 minutos: uma mudança demora a aparecer. |
+| GitHub Pages (`<dono>.github.io/<repo>/`) | Sim | Arquivo de até 100 MB. Bom para o `.bqgame` gerado por um workflow. |
+| jsDelivr (`cdn.jsdelivr.net/gh/<dono>/<repo>@<ref>/<caminho>`) | Sim | Até ~20 MB por arquivo. |
+| GitHub Releases (download) | Não | O download redireciona para um endereço sem CORS. A página explica e não tenta baixar. |
+| Repositório privado | Não | O raw exige token. Mande o arquivo (**Escolher arquivo**). |
+| itch.io | Não | O CDN do itch não manda CORS. |
+| Servidor próprio | Se mandar o cabeçalho | `Access-Control-Allow-Origin: *` no pacote e nos arquivos que ele usa. |
 
 ## 2. Imagens: dentro do pacote ou por URL
 
@@ -350,7 +371,7 @@ Limites conhecidos:
 
 - Um `regras.js` com laço infinito trava o iframe (o resto do site continua, porque o Chrome roda o iframe em outro processo). Uma trava de tempo fica para depois.
 - O iframe pode buscar imagens e dados em qualquer URL (é assim que `assets.base` funciona). Não há segredo do site lá dentro para vazar, só o estado da partida.
-- Em produção, a página do jogo precisa carregar os scripts com o cabeçalho `Access-Control-Allow-Origin` (o iframe tem origem `null`), ou ficar num domínio próprio.
+- Em produção, a página do jogo precisa carregar os scripts com o cabeçalho `Access-Control-Allow-Origin` (o iframe tem origem `null`), ou ficar num domínio próprio. No Cloudflare Pages, o `public/_headers` manda esse cabeçalho em `/assets/*`.
 
 ## 12. Regras automáticas (`regras.js`)
 
@@ -614,11 +635,11 @@ Um erro aponta o arquivo em que aconteceu.
 
 ### TypeScript
 
-Na pasta do jogo, `rules` pode apontar para um `.ts`. O `pnpm exemplos` (ou `node scripts/pack-game.mjs <pasta> <saida.bqgame>`) junta esse arquivo e os módulos que ele importa num `.js` só (esbuild), e o manifest do pacote passa a apontar para o `.js`. Os fontes `.ts`, os testes (`*.test.*`) e o `tsconfig.json` não entram no pacote.
+Na pasta do jogo, `rules` pode apontar para um `.ts`. O `bqgame-pack <pasta> <saida.bqgame>` (no repositório do bqtable, `pnpm exemplos` ou `node scripts/pack-game.mjs`) junta esse arquivo e os módulos que ele importa num `.js` só (esbuild), e o manifest do pacote passa a apontar para o `.js`. Os fontes `.ts`, os testes (`*.test.*`) e o `tsconfig.json` não entram no pacote.
 
 ```ts
 // regras/index.ts
-import type { GameApi } from '@/engine/package';
+import type { GameApi } from 'bqtable/sdk';
 import { apoios } from './tableau'; // funções puras, testáveis sem o jogo
 
 declare const game: GameApi; // o parâmetro que o jogo passa
@@ -631,23 +652,27 @@ game.rule({ id: 'tableau', validate: (cmd, state) => … });
 
 ### Testes sem tela
 
-Testes `*.test.ts` dentro de `examples/` rodam no Vitest (Node), junto com os do motor. Há dois jeitos de testar:
+Os testes `*.test.ts` rodam no Vitest (Node): no repositório do jogo e, aqui, os de `examples/`, junto com os do motor. Há dois jeitos de testar:
 
 ```ts
-import { loadGameFolder } from '@/engine/testing';
+import { loadGameFolder } from 'bqtable/testing';
 import { apoios } from './tableau';
 
 it('apoios', () => expect(apoios('1,1')).toEqual(['0,0', '0,1'])); // função pura
 
 it('partida', async () => {
-  const game = await loadGameFolder('examples/piramide'); // empacota a pasta, como o pnpm exemplos
+  const game = await loadGameFolder('examples/piramide'); // empacota a pasta, como o bqgame-pack
   const m = game.createManager({ players: 2, seed: 7, options: { stage: 'A' } });
   expect(m.dispatch({ type: 'dropInto', id: 'c1', zone: 'p1-tableau', slot: '1,0', actor: 'p1' }))
     .toEqual({ ok: false, error: 'faltam cartas de apoio em 0,0' });
 });
 ```
 
-Fora do navegador não há imagens: elas viram placeholder, e o resto do jogo funciona igual. O exemplo completo está em `examples/piramide/regras/`.
+Fora do navegador não há imagens: elas viram placeholder, e o resto do jogo funciona igual (`loadGameFolder(pasta, { exclude: (p) => p.startsWith('images/') })` nem as lê). O exemplo completo está em `examples/piramide/regras/`.
+
+### Repositório próprio
+
+Um jogo pode ficar num repositório git separado, com o bqtable como dependência: `bqtable/sdk` (tipos e funções puras), `bqtable/testing` (`loadGameFolder`) e o comando `bqgame-pack`. Como montar o `package.json`, o `tsconfig` e os testes: [SDK.md](SDK.md).
 
 ## 17. Descrições e palavras-chave
 

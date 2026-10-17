@@ -253,6 +253,14 @@ async function loadRules(
   files: Map<string, Uint8Array>,
   resolve: (ref: string) => string,
 ) {
+  // repositório aberto como pasta (o manifest aponta para o fonte .ts): o navegador não compila
+  if (/\.[cm]?tsx?$/.test(ref)) {
+    throw new GameDefinitionError(
+      `${ref}: regras em TypeScript precisam ser compiladas. Gere o .bqgame com o bqgame-pack ` +
+        '(scripts/pack-game.mjs: compila e aponta o manifest para o .js), ou publique o .js ' +
+        'compilado e aponte "rules" para ele.',
+    );
+  }
   const file = files.get(normalizePath(ref));
   let code: string;
   if (file) code = new TextDecoder().decode(file);

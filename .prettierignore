@@ -1,4 +1,5 @@
 dist
+dist-sdk
 coverage
 pnpm-lock.yaml
 docs

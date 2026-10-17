@@ -109,6 +109,37 @@ describe('PlayPage', () => {
     expect(post.mock.calls[0]![0]).toMatchObject({ type: 'bq:load', prefs: guardado });
   });
 
+  it.each([
+    '/jogar?url=https://github.com/KaueMre/bqtable/blob/main/public/exemplos/baralho.json',
+    '/jogar?gh=KaueMre/bqtable/public/exemplos/baralho.json',
+  ])('link do GitHub baixa o arquivo cru: %s', async (path) => {
+    const raw =
+      'https://raw.githubusercontent.com/KaueMre/bqtable/main/public/exemplos/baralho.json';
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => new Response('{"format":"bqgame/1"}'));
+    try {
+      renderAt(path);
+      const { message } = await handshake();
+      expect(fetch).toHaveBeenCalledWith(raw);
+      expect(message).toMatchObject({ name: raw, url: raw }); // base dos caminhos relativos
+    } finally {
+      fetch.mockRestore();
+    }
+  });
+
+  it('link de Release explica o motivo sem tentar baixar', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch');
+    try {
+      renderAt('/jogar?url=https://github.com/o/r/releases/download/v1/jogo.bqgame');
+      expect(await screen.findByRole('alert')).toHaveTextContent(/não manda o cabeçalho de CORS/);
+      expect(screen.queryByTitle(/^Jogo: /)).not.toBeInTheDocument();
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      fetch.mockRestore();
+    }
+  });
+
   it('URL que não existe mostra o erro na página', async () => {
     renderAt('/jogar?url=/exemplos/nao-existe.bqgame');
     expect(await screen.findByRole('alert')).toHaveTextContent(

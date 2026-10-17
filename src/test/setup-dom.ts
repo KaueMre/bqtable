@@ -9,7 +9,7 @@ afterEach(() => {
   cleanup();
 });
 
-// jsdom não tem servidor: URLs da raiz ("/docs/games/tatto/dados/cartas_mindset.json") são lidas do projeto.
+// jsdom não tem servidor: URLs da raiz ("/src/pages/sandbox/cartas.json") são lidas do projeto.
 const projectRoot = join(import.meta.dirname, '../..');
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {

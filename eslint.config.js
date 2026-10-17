@@ -7,7 +7,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage']),
+  globalIgnores(['dist', 'dist-sdk', 'coverage']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -105,6 +105,46 @@ export default defineConfig([
             {
               group: ['@/games/*', '@/pages/*'],
               message: 'o motor não importa jogos nem páginas.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // A SDK (bqtable/sdk) é o contrato dos repositórios de jogo (docs/engine/SDK.md): sem a tela.
+  {
+    files: ['src/sdk/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/engine/package',
+              message: 'use @/engine/package/game e afins: o index traz o GameView (React).',
+            },
+          ],
+          patterns: [
+            {
+              group: [
+                'react',
+                'react/*',
+                'react-dom',
+                'react-dom/*',
+                '@tanstack/*',
+                'konva',
+                'react-konva',
+                '@/engine/data',
+                '@/engine/data/*',
+                '@/engine/react',
+                '@/engine/react/*',
+                '@/engine/render',
+                '@/engine/render/*',
+                '@/engine/ui/*',
+                '@/games/*',
+                '@/pages/*',
+              ],
+              message: 'a SDK não importa React, tela, jogos nem páginas.',
             },
           ],
         },

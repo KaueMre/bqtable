@@ -16,6 +16,7 @@ import {
   type FrameLoad,
   type SitePrefs,
 } from '@/frame/protocol';
+import { normalizarUrl, urlDoGh } from './enderecos';
 import { EXEMPLOS } from './exemplos';
 import './play.css';
 
@@ -43,13 +44,18 @@ const porArquivo = (file: File): Fonte => ({
 
 /**
  * Escolher um jogo (arquivo, URL ou exemplo) e jogá-lo num iframe isolado. `?url=` abre direto
- * (link compartilhável). A página só busca os bytes; o jogo e o regras.js rodam no iframe.
+ * (link compartilhável; link de página do GitHub vira o arquivo cru) e `?gh=dono/repo@ref/caminho`
+ * é o atalho para um arquivo no GitHub. A página só busca os bytes; o jogo e o regras.js rodam no
+ * iframe.
  */
 export function PlayPage() {
   const [params, setParams] = useSearchParams();
   const urlParam = params.get('url');
+  const ghParam = params.get('gh');
   const [arquivo, setArquivo] = useState<Fonte | null>(null);
-  const fonte = arquivo ?? (urlParam ? porUrl(urlParam) : null);
+  const endereco = urlParam ? normalizarUrl(urlParam) : ghParam ? urlDoGh(ghParam) : null;
+  const erro = !arquivo && endereco && 'erro' in endereco ? endereco.erro : null;
+  const fonte = arquivo ?? (endereco && 'url' in endereco ? porUrl(endereco.url) : null);
 
   const abrirUrl = (url: string) => {
     setArquivo(null);
@@ -102,6 +108,10 @@ export function PlayPage() {
         >
           <Pacote fonte={fonte} />
         </DataBoundary>
+      ) : erro ? (
+        <p role="alert" className="play-error">
+          {erro}
+        </p>
       ) : (
         <p className="play-empty">Escolha um arquivo, cole uma URL ou abra um exemplo.</p>
       )}
