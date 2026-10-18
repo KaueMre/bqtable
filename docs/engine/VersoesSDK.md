@@ -12,12 +12,16 @@ A partir da 0.2.0, este arquivo vem junto com a SDK, na mesma versão da tag: `n
 
 | Versão | Tag | No site | Destaques | Precisa mudar? |
 |---|---|---|---|---|
-| [0.2.0](#sdk-v020-em-preparo) | ainda não | ainda não | Movimento na tela, fim de partida competitivo, partida em rede | Só regras em TypeScript que leem `state.ended.result` |
+| [0.2.0](#sdk-v020-em-preparo) | ainda não | 17/10/2026 | Movimento na tela, fim de partida competitivo, partida em rede | Só regras em TypeScript que leem `state.ended.result` |
 | [0.1.0](#sdk-v010) | 17/10/2026 | 17/10/2026 | Primeira versão | — |
 
 ## sdk-v0.2.0 (em preparo)
 
-Ainda sem tag. Para testar antes dela, use `"bqtable": "link:../bqtable"` e rode `pnpm build:sdk` no bqtable ([SDK.md](SDK.md)).
+Ainda sem tag; no site desde 17/10/2026 (commit `b41d491`). Antes da tag:
+
+- **`motion` já pode ir no manifest:** os testes na 0.1.0 ignoram o campo, e o site o usa. O `fromHand` dentro dele chega ao site no próximo push da `main` (antes disso, o site ignora só ele).
+- **`endGame` com `winners` ainda não:** na 0.1.0, os tipos exigem `result`, e o motor dos testes recusa o comando sem ele.
+- Para testar tudo antes da tag, use `"bqtable": "link:../bqtable"` e rode `pnpm build:sdk` no bqtable ([SDK.md](SDK.md)).
 
 ### Precisa mudar
 
@@ -43,8 +47,10 @@ Como aproveitar:
 - **Cartas jogadas da mão, como no Slay the Spire:** `"drag": "arrow"` no kind da carta e `"motion": { "place": "showcase", "after": "glow" }` na zona onde a carta é jogada. A carta cresce em evidência ao ir para essa zona; no resto (comprar, descartar), segue o `place` do kind, por exemplo `"move"`.
 - **Fichas e peças criadas pelas regras:** `"place": "drop"` faz a peça cair no lugar, e todos percebem onde ela apareceu.
 - **Padrão do jogo todo:** `table.motion`. O `motion` de cada kind vence campo a campo, e o da zona vence o do kind.
+- **A carta jogada e a que as regras movem, diferentes (`fromHand`):** `"fromHand": { "place": "showcase", "after": "shake" }` no kind vale só para a peça que saiu de uma mão; o resto segue o `place` e o `after` de sempre (ex.: arco com luz). O `fromHand` vence até a zona, então zonas que só forçavam o arco porque recebem muitas cartas das regras (descarte, deck) podem continuar como estão.
+  - **Contorno que fica sobrando:** pôr `motion` em cada zona que recebe cartas das regras para tirar a evidência do kind. Com `fromHand`, a evidência fica no `fromHand` do kind, e o `place` do kind volta a ser o das regras.
 
-Tipos novos em `bqtable/sdk`: `Motion`, `ZoneMotion`, `PlaceMotion`, `AfterMotion`. Pedido atendido: Hot Streak M2.
+Tipos novos em `bqtable/sdk`: `Motion`, `ZoneMotion`, `ArrivalMotion`, `PlaceMotion`, `AfterMotion`. Pedidos atendidos: Hot Streak M2, Eternal Decks M19.
 
 #### Fim de partida competitivo (`winners`, `ranking`)
 
@@ -72,6 +78,7 @@ Com um jogo aberto, **Hospedar** cria uma sala e mostra um link. Quem abre o lin
 | Hot Streak | M2. Animar as peças que as regras movem | Nesta versão |
 | Hot Streak | M8. `redactFor` em `bqtable/testing` | Sugerido para esta versão; ainda não entrou |
 | Hot Streak | M3 a M7, M9 | Ainda não |
+| Eternal Decks | M19. Movimento pela origem da peça (`fromHand`) | Nesta versão (no site no próximo push) |
 
 ## sdk-v0.1.0
 

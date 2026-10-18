@@ -243,7 +243,12 @@ export async function loadGame(source: PackageSource): Promise<LoadedGame> {
 
     motion(piece) {
       if (!motions.has(piece.kind)) {
-        const merged = { ...manifest.table?.motion, ...kinds.get(piece.kind)?.motion };
+        const table = manifest.table?.motion;
+        const own = kinds.get(piece.kind)?.motion;
+        const merged: Motion = { ...table, ...own };
+        if (table?.fromHand && own?.fromHand) {
+          merged.fromHand = { ...table.fromHand, ...own.fromHand };
+        }
         motions.set(piece.kind, Object.keys(merged).length ? merged : undefined);
       }
       return motions.get(piece.kind);

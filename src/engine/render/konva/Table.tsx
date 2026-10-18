@@ -33,6 +33,7 @@ import { handIndexAt, inHandBand, layoutHand } from '../hand';
 import {
   diffPlaces,
   isStill,
+  leftHand,
   resolveMotion,
   waypoints,
   type MotionSpec,
@@ -367,11 +368,15 @@ export function Table({
     contextMenu,
     nameOf,
     decorate,
-    /** Movimento da peça: o do jogo, com o da zona onde ela está por cima. */
-    motionOf: (piece: Piece, all: Record<PieceId, Piece>) =>
+    /**
+     * Movimento da peça: o do jogo, com o da zona onde ela está por cima (e o `fromHand` dos dois,
+     * se ela saiu de uma mão).
+     */
+    motionOf: (piece: Piece, all: Record<PieceId, Piece>, fromHand = false) =>
       resolveMotion(
         motion?.(piece),
         piece.parentId === null ? undefined : all[piece.parentId]?.zone?.motion,
+        fromHand,
       ),
   };
   const latest = useRef(current);
@@ -884,7 +889,8 @@ export function Table({
     const specs = new Map<PieceId, MotionSpec>();
     for (const id of [...moves.map((m) => m.id), ...appeared]) {
       const piece = pieces[id];
-      const spec = piece && latest.current.motionOf(piece, pieces);
+      const hand = leftHand(id, lastEvents, before.pieces, pieces);
+      const spec = piece && latest.current.motionOf(piece, pieces, hand);
       if (spec && !isStill(spec)) specs.set(id, spec);
     }
     if (!specs.size) return;

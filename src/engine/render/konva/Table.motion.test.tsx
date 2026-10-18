@@ -42,6 +42,15 @@ function setup(): Manager {
     zone: { layout: 'row', row: { gap: 0 } },
   });
   for (const id of ['c1', 'c2', 'c3']) create({ id, kind: 'carta', parentId: 'fila' });
+  // mão: mesa x 600..800, y 400..500 (sem jogador na tela, fica na mesa como as outras zonas)
+  create({
+    id: 'mao',
+    kind: 'zona',
+    size: { w: 200, h: 100 },
+    transform: { x: 700, y: 450, z: 5 },
+    zone: { layout: 'row', hand: true },
+  });
+  create({ id: 'h1', kind: 'carta', parentId: 'mao' });
   m.clearHistory();
   return m;
 }
@@ -216,6 +225,24 @@ describe('Table: movimento das peças', () => {
     act(() => t.node('A').fire('dragstart'));
     expect(t.ghosts()).toHaveLength(0);
     expect(t.node('A').opacity()).toBe(1);
+  });
+
+  it('fromHand: a carta que sai da mão chega do jeito dela; a que as regras movem, não', () => {
+    const t = renderTable(setup(), only('carta', { place: 'move', fromHand: { place: 'drop' } }));
+    const daFila = t.screenOf('c3');
+    t.run({
+      type: 'batch',
+      commands: [
+        { type: 'dropInto', id: 'h1', zone: 'deck' },
+        { type: 'dropInto', id: 'c3', zone: 'deck' },
+      ],
+    });
+    const [h1, c3] = [t.ghosts()[0]!, t.ghosts()[1]!];
+    const deck = t.toScreen({ x: 400, y: 100 });
+    // h1 (da mão) cai de cima do deck; c3 (da fila) sai de onde estava
+    expect(h1.x()).toBeCloseTo(deck.x);
+    expect(h1.y()).toBeLessThan(deck.y);
+    expectAt(c3, daFila);
   });
 
   it('as vizinhas que se ajeitam (fila) deslizam no lugar, sem cópia', () => {

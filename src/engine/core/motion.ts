@@ -39,11 +39,20 @@ export interface AfterMotionSpec {
 
 export type AfterMotion = AfterType | AfterMotionSpec;
 
-export interface Motion {
-  drag?: DragMotion;
+/** A chegada e o efeito depois. */
+export interface ArrivalMotion {
   place?: PlaceMotion;
   after?: AfterMotion;
 }
 
+export interface Motion extends ArrivalMotion {
+  drag?: DragMotion;
+  /**
+   * Quando a peça saiu de uma mão (zona `hand`), como a carta que o jogador joga: vence a chegada
+   * e o efeito de qualquer origem (ex.: em evidência, e o que as regras movem, em arco).
+   */
+  fromHand?: ArrivalMotion;
+}
+
 /** Na zona: como as peças chegam nela (vence o do kind). O arrasto é da peça. */
-export type ZoneMotion = Pick<Motion, 'place' | 'after'>;
+export type ZoneMotion = Omit<Motion, 'drag'>;

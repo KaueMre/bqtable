@@ -151,6 +151,28 @@ describe('movimento (motion)', () => {
     expect(pilha!.zone!.motion).toEqual({ place: 'showcase' });
   });
 
+  it('fromHand: o da mesa e o do kind se juntam campo a campo; a zona aceita o dela', async () => {
+    const game = await load({
+      table: { motion: { fromHand: { place: 'showcase', after: 'shake' } } },
+      kinds: [{ kind: 'k', motion: { fromHand: { after: 'glow' } } }, { kind: 'z' }],
+      setup: [
+        {
+          pieces: [
+            { id: 'a', kind: 'k' },
+            {
+              id: 'pilha',
+              kind: 'z',
+              zone: { layout: 'stack', motion: { fromHand: { place: 'drop' } } },
+            },
+          ],
+        },
+      ],
+    });
+    const { a, pilha } = game.createManager({ players: 1 }).getState().pieces;
+    expect(game.motion(a!)).toEqual({ fromHand: { place: 'showcase', after: 'glow' } });
+    expect(pilha!.zone!.motion).toEqual({ fromHand: { place: 'drop' } });
+  });
+
   it('sem motion em lugar nenhum: nada', async () => {
     const game = await load({ setup: [{ pieces: [{ id: 'a', kind: 'k' }] }] });
     expect(game.motion(game.createManager({ players: 1 }).getState().pieces.a!)).toBeUndefined();

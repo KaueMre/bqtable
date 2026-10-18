@@ -91,13 +91,39 @@ export function afterSpec(m?: AfterMotion): AfterSpec {
   };
 }
 
-/** O movimento da peça (`own`: kind e padrão da mesa) com o da zona onde ela está por cima. */
-export function resolveMotion(own?: Motion, zone?: ZoneMotion): MotionSpec {
+/**
+ * O movimento da peça (`own`: kind e padrão da mesa) com o da zona onde ela está por cima. Se a
+ * peça saiu de uma mão (`fromHand`), o `fromHand` vence o resto: o da zona, depois o do kind.
+ */
+export function resolveMotion(own?: Motion, zone?: ZoneMotion, fromHand = false): MotionSpec {
+  const pick = <K extends 'place' | 'after'>(key: K) =>
+    (fromHand ? (zone?.fromHand?.[key] ?? own?.fromHand?.[key]) : undefined) ??
+    zone?.[key] ??
+    own?.[key];
   return {
     drag: own?.drag === 'arrow' ? 'arrow' : 'follow',
-    place: placeSpec(zone?.place ?? own?.place),
-    after: afterSpec(zone?.after ?? own?.after),
+    place: placeSpec(pick('place')),
+    after: afterSpec(pick('after')),
   };
+}
+
+/**
+ * A peça saiu de uma mão (zona `hand`) nesta jogada. Vale o primeiro `piecePlaced` dela na
+ * jogada; sem ele (desfazer), o pai de antes. Pelo evento, funciona também para quem não via a
+ * peça antes: na rede, a carta virada na mão de outro jogador chega com outro id (um apelido).
+ */
+export function leftHand(
+  id: PieceId,
+  events: readonly GameEvent[],
+  before: Pieces,
+  after: Pieces,
+): boolean {
+  const placed = events.find((ev) => ev.type === 'piecePlaced' && ev.id === id);
+  const from = placed
+    ? (placed.from as { parentId?: PieceId | null } | undefined)?.parentId
+    : before[id]?.parentId;
+  if (from === undefined || from === null) return false;
+  return !!(before[from] ?? after[from])?.zone?.hand;
 }
 
 /** Nada a animar: a peça se comporta como sempre. */

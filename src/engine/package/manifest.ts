@@ -57,6 +57,8 @@ export const MotionManifest = z.object({
   drag: z.enum(['follow', 'arrow']).optional(),
   place: PlaceMotion.optional(),
   after: AfterMotion.optional(),
+  /** Quando a peça saiu de uma mão: vence `place` e `after`. */
+  fromHand: z.object({ place: PlaceMotion.optional(), after: AfterMotion.optional() }).optional(),
 });
 
 export const ZoneManifest = z.object({
@@ -91,7 +93,7 @@ export const ZoneManifest = z.object({
   /** Outros jogadores também podem soltar peças aqui. */
   openToOthers: z.boolean().optional(),
   /** Como as peças chegam nesta zona na tela (vence o `motion` do kind). */
-  motion: MotionManifest.pick({ place: true, after: true }).optional(),
+  motion: MotionManifest.omit({ drag: true }).optional(),
 });
 
 /** Peça como no motor (PieceInit), em JSON. Validada depois de preencher os `{campos}`. */

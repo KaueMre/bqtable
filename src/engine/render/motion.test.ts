@@ -8,6 +8,7 @@ import {
   glowAt,
   insidePiece,
   isStill,
+  leftHand,
   placeSpec,
   planFlight,
   relocated,
@@ -56,6 +57,30 @@ describe('resolveMotion', () => {
     });
     // sem `after` na zona, vale o do kind
     expect(resolveMotion({ after: 'glow' }, { place: 'drop' }).after.type).toBe('glow');
+  });
+
+  it('saindo da mão, o fromHand vence a zona e o kind (o da zona vence o do kind)', () => {
+    const kind = {
+      place: { type: 'move' as const, path: 'arc' as const },
+      after: 'glow' as const,
+      fromHand: { place: 'showcase' as const, after: 'shake' as const },
+    };
+    const descarte = { place: 'move' as const, after: 'glow' as const };
+    // a carta jogada da mão vai em evidência, mesmo para a zona que força o arco
+    expect(resolveMotion(kind, descarte, true)).toMatchObject({
+      place: { type: 'showcase' },
+      after: { type: 'shake' },
+    });
+    // o que as regras movem segue a zona
+    expect(resolveMotion(kind, descarte, false)).toMatchObject({
+      place: { type: 'move' },
+      after: { type: 'glow' },
+    });
+    // fromHand da zona vence o do kind, campo a campo
+    expect(resolveMotion(kind, { fromHand: { place: 'drop' } }, true)).toMatchObject({
+      place: { type: 'drop' },
+      after: { type: 'shake' },
+    });
   });
 
   it('tipo desconhecido (zona criada pelas regras) não anima', () => {
@@ -117,6 +142,29 @@ describe('diffPlaces', () => {
     const b = { ...a, transform: { ...a.transform, z: 5 } };
     expect(relocated(a, b)).toBe(false);
     expect(relocated(a, { ...a, slot: '1,0' })).toBe(true);
+  });
+});
+
+describe('leftHand', () => {
+  const zone = (id: string, hand: boolean) =>
+    ({ id, kind: 'z', parentId: null, zone: { layout: 'row', hand } }) as unknown as Piece;
+  const card = (parentId: string) => ({ id: 'c', kind: 'k', parentId }) as unknown as Piece;
+  const zones = { mao: zone('mao', true), mesa: zone('mesa', false) };
+
+  it('pelo pai de antes, sem eventos (desfazer)', () => {
+    expect(leftHand('c', [], { ...zones, c: card('mao') }, zones)).toBe(true);
+    expect(leftHand('c', [], { ...zones, c: card('mesa') }, zones)).toBe(false);
+  });
+
+  it('pelo primeiro piecePlaced da jogada, mesmo sem a peça antes (apelido na rede)', () => {
+    const events = [
+      { type: 'piecePlaced', id: 'c', from: { parentId: 'mao' }, to: { parentId: 'mesa' } },
+      { type: 'piecePlaced', id: 'c', from: { parentId: 'mesa' }, to: { parentId: 'mesa' } },
+    ];
+    expect(leftHand('c', events, zones, { ...zones, c: card('mesa') })).toBe(true);
+    // a carta veio da mesa, mesmo que antes estivesse na mão (o evento vence)
+    const daMesa = [{ type: 'piecePlaced', id: 'c', from: { parentId: 'mesa' } }];
+    expect(leftHand('c', daMesa, { ...zones, c: card('mao') }, zones)).toBe(false);
   });
 });
 

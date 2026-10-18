@@ -144,12 +144,26 @@ Onde configurar, do mais geral ao mais específico (o mais específico vence):
 
 - `table.motion`: o padrão de todos os kinds.
 - `kinds[].motion`: o do tipo, campo a campo por cima do da mesa.
-- `zone.motion` (só `place` e `after`): como as peças **chegam nesta zona**. Ex.: a carta vai da mão para a zona de jogadas em evidência, mas chega à mão só deslizando.
+- `zone.motion` (`place`, `after` e `fromHand`): como as peças **chegam nesta zona**. Ex.: a carta vai da mão para a zona de jogadas em evidência, mas chega à mão só deslizando.
 
 ```json
 { "kind": "carta", "motion": { "drag": "arrow", "place": "move" } }
 { "id": "jogadas", "kind": "zona", "zone": { "layout": "row", "motion": { "place": "showcase", "after": "glow" } } }
 ```
+
+**Pela origem (`fromHand`):** `place` e `after` dentro de `fromHand` valem quando a peça **saiu de uma mão** (zona com `"hand": true`) nesta jogada: a carta que o jogador joga, arrastando ou por uma ação. Assim, a carta jogada e a que as regras movem podem chegar à mesma zona de jeitos diferentes.
+
+```json
+{ "kind": "carta",
+  "motion": {
+    "drag": "arrow",
+    "place": { "type": "move", "path": "arc" }, "after": "glow",
+    "fromHand": { "place": "showcase", "after": "shake" }
+  } }
+```
+
+- O `fromHand` vence o `place` e o `after` de qualquer origem, inclusive os da zona: a carta jogada da mão vai em evidência até para um descarte com `"motion": { "place": "move" }`. Entre dois `fromHand`, o da zona vence o do kind, campo a campo. O da mesa (`table.motion.fromHand`) e o do kind também se juntam campo a campo.
+- A origem é a zona onde a peça estava no começo da jogada, a mesma para todas as telas (na rede também, e mesmo para quem via a carta virada na mão de outro jogador).
 
 Quando anima:
 
